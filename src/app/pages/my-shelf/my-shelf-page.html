@@ -1,0 +1,72 @@
+<section class="shelf-hero" aria-labelledby="myshelf-title">
+  <div>
+    <p class="eyebrow">MyShelf</p>
+    <h1 id="myshelf-title">La libreria di {{ displayName() }}.</h1>
+  </div>
+
+  <div class="shelf-stats" aria-label="Statistiche MyShelf">
+    <div>
+      <strong>{{ activeGames() }}</strong>
+      <span>in corso</span>
+    </div>
+    <div>
+      <strong>{{ plannedGames() }}</strong>
+      <span>pianificati</span>
+    </div>
+    <div>
+      <strong>{{ completedGames() }}</strong>
+      <span>completati</span>
+    </div>
+  </div>
+</section>
+
+@if (!user()) {
+  <section class="signin-callout">
+    <div>
+      <p class="eyebrow">Sessione ospite</p>
+      <h2>Accedi per rendere personale la tua shelf.</h2>
+    </div>
+    <a routerLink="/profilo">Vai al profilo</a>
+  </section>
+}
+
+<section class="lane-grid" aria-label="Stati della libreria">
+  @for (lane of lanes(); track lane.title) {
+    <article class="lane">
+      <header>
+        <h2>{{ lane.title }}</h2>
+        <span>{{ lane.games.length }}</span>
+      </header>
+
+      <div class="lane-list">
+        @for (game of lane.games; track game.id) {
+          <article class="shelf-card">
+            <a [routerLink]="['/giochi', game.id]" [attr.aria-label]="'Apri ' + game.title">
+              <div [class]="'game-cover mini-cover ' + game.coverTheme">
+                <span>{{ game.progress }}%</span>
+              </div>
+              <div class="shelf-card-body">
+                <p>{{ game.genre }} &middot; {{ game.platform }}</p>
+                <h3>{{ game.title }}</h3>
+                <div class="progress-track" aria-hidden="true">
+                  <span [style.width.%]="game.progress"></span>
+                </div>
+              </div>
+            </a>
+
+            <div class="quick-actions" aria-label="Azioni rapide">
+              @if (game.status !== 'In corso') {
+                <button type="button" (click)="setStatus(game, 'In corso')">Avvia</button>
+              }
+              @if (game.status !== 'Completato') {
+                <button type="button" (click)="setStatus(game, 'Completato')">Completa</button>
+              }
+            </div>
+          </article>
+        } @empty {
+          <div class="lane-empty">Nessun gioco in questa sezione.</div>
+        }
+      </div>
+    </article>
+  }
+</section>

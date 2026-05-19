@@ -1,0 +1,93 @@
+<section class="profile-layout" aria-labelledby="profile-title">
+  <div class="profile-card">
+    <p class="eyebrow">Profilo</p>
+    <h1 id="profile-title">{{ user()?.displayName ?? 'Ospite' }}</h1>
+    <p class="handle">{{ user()?.handle ?? '@guest-player' }}</p>
+    <p class="auth-status">{{ authReady() ? (user() ? 'Firebase Auth attivo' : 'Sessione ospite') : 'Connessione in corso' }}</p>
+
+    @if (user()) {
+      <button type="button" (click)="signOut()">Esci</button>
+    }
+  </div>
+
+  <div class="profile-grid">
+    <article>
+      <span>{{ games().length }}</span>
+      <p>giochi salvati</p>
+    </article>
+    <article>
+      <span>{{ totalHours() }}</span>
+      <p>ore registrate</p>
+    </article>
+    <article>
+      <span>{{ favoriteGenres().join(', ') }}</span>
+      <p>generi ricorrenti</p>
+    </article>
+  </div>
+
+  <section class="auth-panel" aria-label="Accesso utente">
+    <div>
+      <p class="eyebrow">Accesso</p>
+      <h2>Rientra nella tua shelf</h2>
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          autocomplete="email"
+          [ngModel]="signInEmail()"
+          (ngModelChange)="updateSignInEmail($event)"
+        />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input
+          type="password"
+          autocomplete="current-password"
+          [ngModel]="signInPassword()"
+          (ngModelChange)="updateSignInPassword($event)"
+        />
+      </label>
+      <button type="button" (click)="signIn()">Accedi</button>
+    </div>
+
+    <div>
+      <p class="eyebrow">Nuovo profilo</p>
+      <h2>Crea una shelf</h2>
+      <label class="field">
+        <span>Nome</span>
+        <input
+          type="text"
+          autocomplete="name"
+          placeholder="Nome giocatore"
+          [ngModel]="registerName()"
+          (ngModelChange)="updateRegisterName($event)"
+        />
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          autocomplete="email"
+          placeholder="email@example.com"
+          [ngModel]="registerEmail()"
+          (ngModelChange)="updateRegisterEmail($event)"
+        />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input
+          type="password"
+          autocomplete="new-password"
+          placeholder="Almeno 6 caratteri"
+          [ngModel]="registerPassword()"
+          (ngModelChange)="updateRegisterPassword($event)"
+        />
+      </label>
+      <button type="button" (click)="register()">Registra</button>
+    </div>
+
+    @if (authMessage()) {
+      <p class="auth-message">{{ authMessage() }}</p>
+    }
+  </section>
+</section>

@@ -1,0 +1,71 @@
+@if (game(); as selectedGame) {
+  <a class="back-link" routerLink="/catalogo">Torna al catalogo</a>
+
+  <section class="detail-hero">
+    <div [class]="'game-cover detail-cover ' + selectedGame.coverTheme">
+      <span>{{ selectedGame.releaseYear }}</span>
+    </div>
+
+    <div class="hero-copy">
+      <p class="eyebrow">{{ selectedGame.genre }} &middot; {{ selectedGame.platform }}</p>
+      <h1>{{ selectedGame.title }}</h1>
+      <p>{{ selectedGame.description }}</p>
+
+      <div class="hero-meta" aria-label="Dettagli principali">
+        <span>{{ selectedGame.developer }}</span>
+        <span>{{ selectedGame.publisher }}</span>
+        <span>{{ selectedGame.modes.join(', ') }}</span>
+      </div>
+
+      <div class="action-row" aria-label="Cambia stato">
+        @for (status of statuses; track status) {
+          <button
+            type="button"
+            [class.is-active]="selectedGame.status === status"
+            (click)="setStatus(selectedGame, status)"
+          >
+            {{ status }}
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="detail-grid" aria-label="Scheda personale">
+    <article class="info-panel progress-panel">
+      <p class="eyebrow">Progressi</p>
+      <h2>{{ selectedGame.progress }}%</h2>
+      <div class="progress-track" aria-hidden="true">
+        <span [style.width.%]="selectedGame.progress"></span>
+      </div>
+      <p>{{ selectedGame.personalGoal }}</p>
+    </article>
+
+    <article class="info-panel">
+      <p class="eyebrow">Tempo e voto</p>
+      <h2>{{ selectedGame.hoursPlayed }} ore</h2>
+      <p class="rating-line">{{ ratingStars(selectedGame) }}</p>
+    </article>
+
+    <article class="info-panel">
+      <p class="eyebrow">Note</p>
+      <h2>Osservazioni</h2>
+      <p>{{ selectedGame.notes }}</p>
+    </article>
+
+    <article class="info-panel tag-panel">
+      <p class="eyebrow">Tag</p>
+      <div>
+        @for (tag of selectedGame.tags; track tag) {
+          <span>{{ tag }}</span>
+        }
+      </div>
+    </article>
+  </section>
+} @else {
+  <section class="empty-state">
+    <h1>Gioco non trovato</h1>
+    <p>Il gioco richiesto non e presente nel catalogo.</p>
+    <a routerLink="/catalogo">Torna al catalogo</a>
+  </section>
+}

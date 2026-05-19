@@ -1,0 +1,106 @@
+<section class="workspace" aria-labelledby="catalog-title">
+  <aside class="filters" aria-label="Filtri catalogo">
+    <div>
+      <p class="eyebrow">Catalogo personale</p>
+      <h1 id="catalog-title">Videogiochi da scoprire, seguire e completare.</h1>
+    </div>
+
+    <label class="field">
+      <span>Cerca</span>
+      <input
+        type="search"
+        placeholder="Titolo, descrizione o tag"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="updateSearch($event)"
+      />
+    </label>
+
+    <label class="field">
+      <span>Genere</span>
+      <select [ngModel]="selectedGenre()" (ngModelChange)="updateGenre($event)">
+        <option>Tutti</option>
+        @for (genre of genres(); track genre) {
+          <option [value]="genre">{{ genre }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Piattaforma</span>
+      <select [ngModel]="selectedPlatform()" (ngModelChange)="updatePlatform($event)">
+        <option>Tutte</option>
+        @for (platform of platforms(); track platform) {
+          <option [value]="platform">{{ platform }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="status-group" aria-label="Stato">
+      @for (status of statuses; track status) {
+        <button
+          type="button"
+          [class.is-active]="selectedStatus() === status"
+          (click)="updateStatus(status)"
+        >
+          {{ status }}
+        </button>
+      }
+    </div>
+
+    <button class="ghost-button" type="button" (click)="resetFilters()">Azzera filtri</button>
+  </aside>
+
+  <section class="catalog-panel" id="catalogo">
+    <div class="stats-strip" aria-label="Statistiche catalogo">
+      <div>
+        <strong>{{ games().length }}</strong>
+        <span>giochi</span>
+      </div>
+      <div>
+        <strong>{{ completedGames() }}</strong>
+        <span>completati</span>
+      </div>
+      <div>
+        <strong>{{ totalHours() }}</strong>
+        <span>ore registrate</span>
+      </div>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Risultati</p>
+        <h2>{{ filteredGames().length }} giochi trovati</h2>
+      </div>
+    </div>
+
+    <div class="game-grid">
+      @for (game of filteredGames(); track game.id) {
+        <article class="game-card">
+          <a [routerLink]="['/giochi', game.id]" class="game-link" [attr.aria-label]="'Apri ' + game.title">
+            <div [class]="'game-cover card-cover ' + game.coverTheme">
+              <span>{{ game.releaseYear }}</span>
+            </div>
+
+            <div class="game-card-body">
+              <div>
+                <p class="meta">{{ game.genre }} &middot; {{ game.platform }}</p>
+                <h3>{{ game.title }}</h3>
+                <p>{{ game.description }}</p>
+              </div>
+
+              <footer>
+                <span class="status-badge">{{ game.status }}</span>
+                <span class="rating-pill">{{ ratingStars(game) }}</span>
+              </footer>
+            </div>
+          </a>
+        </article>
+      } @empty {
+        <div class="empty-state">
+          <h2>Nessun gioco trovato</h2>
+          <p>Prova a modificare ricerca, genere, piattaforma o stato.</p>
+        </div>
+      }
+    </div>
+  </section>
+</section>
