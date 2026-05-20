@@ -48,6 +48,7 @@
     </div>
 
     <button class="ghost-button" type="button" (click)="resetFilters()">Azzera filtri</button>
+    <button class="primary-button" type="button" (click)="startCreate()">Nuovo gioco</button>
   </aside>
 
   <section class="catalog-panel" id="catalogo">
@@ -66,11 +67,195 @@
       </div>
     </div>
 
+    @if (editorOpen()) {
+      <section class="catalog-editor" aria-labelledby="catalog-editor-title">
+        <div class="editor-heading">
+          <div>
+            <p class="eyebrow">Gestione catalogo</p>
+            <h2 id="catalog-editor-title">{{ editorTitle() }}</h2>
+          </div>
+
+          <div class="editor-actions top-actions">
+            <button class="secondary-button" type="button" (click)="cancelEditor()">Chiudi</button>
+            <button class="save-button" type="button" (click)="saveGame()">Salva</button>
+          </div>
+        </div>
+
+        <div class="catalog-form">
+          <label class="field">
+            <span>Titolo</span>
+            <input
+              type="text"
+              [ngModel]="form().title"
+              (ngModelChange)="updateForm('title', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Anno</span>
+            <input
+              type="number"
+              min="1970"
+              max="2035"
+              [ngModel]="form().releaseYear"
+              (ngModelChange)="updateForm('releaseYear', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Genere</span>
+            <input
+              type="text"
+              [ngModel]="form().genre"
+              (ngModelChange)="updateForm('genre', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Piattaforma</span>
+            <input
+              type="text"
+              [ngModel]="form().platform"
+              (ngModelChange)="updateForm('platform', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Sviluppatore</span>
+            <input
+              type="text"
+              [ngModel]="form().developer"
+              (ngModelChange)="updateForm('developer', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Publisher</span>
+            <input
+              type="text"
+              [ngModel]="form().publisher"
+              (ngModelChange)="updateForm('publisher', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Modalita</span>
+            <input
+              type="text"
+              [ngModel]="form().modes"
+              (ngModelChange)="updateForm('modes', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Copertina</span>
+            <select
+              [ngModel]="form().coverTheme"
+              (ngModelChange)="updateForm('coverTheme', $event)"
+            >
+              @for (theme of coverThemes; track theme.value) {
+                <option [value]="theme.value">{{ theme.label }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="field wide-field">
+            <span>Tag</span>
+            <input
+              type="text"
+              [ngModel]="form().tags"
+              (ngModelChange)="updateForm('tags', $event)"
+            />
+          </label>
+
+          <label class="field wide-field">
+            <span>Descrizione</span>
+            <textarea
+              rows="4"
+              [ngModel]="form().description"
+              (ngModelChange)="updateForm('description', $event)"
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Stato iniziale</span>
+            <select [ngModel]="form().status" (ngModelChange)="updateForm('status', $event)">
+              @for (status of gameStatuses; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Ore</span>
+            <input
+              type="number"
+              min="0"
+              max="999"
+              [ngModel]="form().hoursPlayed"
+              (ngModelChange)="updateForm('hoursPlayed', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Voto</span>
+            <select [ngModel]="form().rating" (ngModelChange)="updateForm('rating', $event)">
+              <option [value]="0">Da valutare</option>
+              <option [value]="1">1 stella</option>
+              <option [value]="2">2 stelle</option>
+              <option [value]="3">3 stelle</option>
+              <option [value]="4">4 stelle</option>
+              <option [value]="5">5 stelle</option>
+            </select>
+          </label>
+
+          <label class="field progress-field">
+            <span>Progresso: {{ form().progress }}%</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              [ngModel]="form().progress"
+              (ngModelChange)="updateForm('progress', $event)"
+            />
+          </label>
+
+          <label class="field wide-field">
+            <span>Obiettivo personale</span>
+            <input
+              type="text"
+              [ngModel]="form().personalGoal"
+              (ngModelChange)="updateForm('personalGoal', $event)"
+            />
+          </label>
+
+          <label class="field wide-field">
+            <span>Note personali</span>
+            <textarea
+              rows="4"
+              [ngModel]="form().notes"
+              (ngModelChange)="updateForm('notes', $event)"
+            ></textarea>
+          </label>
+
+          <div class="editor-actions bottom-actions">
+            <button class="secondary-button" type="button" (click)="cancelEditor()">Annulla</button>
+            <button class="save-button" type="button" (click)="saveGame()">Salva</button>
+          </div>
+        </div>
+      </section>
+    }
+
     <div class="section-heading">
       <div>
         <p class="eyebrow">Risultati</p>
         <h2>{{ filteredGames().length }} giochi trovati</h2>
       </div>
+
+      @if (catalogMessage()) {
+        <p class="catalog-message">{{ catalogMessage() }}</p>
+      }
     </div>
 
     <div class="game-grid">
@@ -94,6 +279,24 @@
               </footer>
             </div>
           </a>
+
+          <div class="card-actions">
+            @if (deleteCandidateId() === game.id) {
+              <button class="danger-button" type="button" (click)="deleteGame(game)">
+                Conferma
+              </button>
+              <button class="secondary-button compact" type="button" (click)="cancelDelete()">
+                Annulla
+              </button>
+            } @else {
+              <button class="secondary-button compact" type="button" (click)="startEdit(game)">
+                Modifica
+              </button>
+              <button class="danger-ghost-button" type="button" (click)="requestDelete(game)">
+                Elimina
+              </button>
+            }
+          </div>
         </article>
       } @empty {
         <div class="empty-state">

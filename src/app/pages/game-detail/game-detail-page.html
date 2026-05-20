@@ -21,8 +21,9 @@
         @for (status of statuses; track status) {
           <button
             type="button"
-            [class.is-active]="selectedGame.status === status"
-            (click)="setStatus(selectedGame, status)"
+            [class.is-active]="draftStatus() === status"
+            [class.has-unsaved-change]="draftDirty() && draftStatus() === status"
+            (click)="setDraftStatus(status)"
           >
             {{ status }}
           </button>
@@ -61,6 +62,116 @@
         }
       </div>
     </article>
+  </section>
+
+  <section class="editor-panel" aria-labelledby="editor-title">
+    <div class="editor-heading">
+      <div>
+        <p class="eyebrow">MyShelf editor</p>
+        <h2 id="editor-title">Modifica i tuoi dati personali</h2>
+      </div>
+
+      @if (draftDirty()) {
+        <p class="save-message is-pending">Modifiche non salvate</p>
+      } @else if (saveMessage()) {
+        <p class="save-message">{{ saveMessage() }}</p>
+      }
+    </div>
+
+    <div class="editor-grid">
+      <label class="field">
+        <span>Stato</span>
+        <select
+          [ngModel]="draftStatus()"
+          (ngModelChange)="setDraftStatus($event)"
+        >
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Ore giocate</span>
+        <input
+          type="number"
+          min="0"
+          max="999"
+          [ngModel]="draftHoursPlayed()"
+          (ngModelChange)="updateDraftHours($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Voto personale</span>
+        <select
+          [ngModel]="draftRating()"
+          (ngModelChange)="updateDraftRating($event)"
+        >
+          <option [value]="0">Da valutare</option>
+          <option [value]="1">1 stella</option>
+          <option [value]="2">2 stelle</option>
+          <option [value]="3">3 stelle</option>
+          <option [value]="4">4 stelle</option>
+          <option [value]="5">5 stelle</option>
+        </select>
+      </label>
+
+      <label class="field progress-field">
+        <span>Progresso: {{ draftProgress() }}%</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          [ngModel]="draftProgress()"
+          (ngModelChange)="updateDraftProgress($event)"
+        />
+      </label>
+
+      <label class="field wide-field">
+        <span>Obiettivo personale</span>
+        <input
+          type="text"
+          [ngModel]="draftPersonalGoal()"
+          (ngModelChange)="updateDraftPersonalGoal($event)"
+        />
+      </label>
+
+      <label class="field wide-field">
+        <span>Note personali</span>
+        <textarea
+          rows="5"
+          [ngModel]="draftNotes()"
+          (ngModelChange)="updateDraftNotes($event)"
+        ></textarea>
+      </label>
+
+      <div class="draft-summary" aria-label="Anteprima modifiche">
+        <p class="eyebrow">Anteprima bozza</p>
+        <strong>{{ draftStatus() }}</strong>
+        <span>{{ draftHoursPlayed() }} ore &middot; {{ draftProgress() }}% &middot; {{ draftRatingStars() }}</span>
+      </div>
+
+      <div class="editor-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="!draftDirty()"
+          (click)="resetDraft(selectedGame)"
+        >
+          Annulla
+        </button>
+        <button
+          type="button"
+          class="save-button"
+          [disabled]="!draftDirty()"
+          (click)="saveShelfEntry(selectedGame)"
+        >
+          Salva modifiche
+        </button>
+      </div>
+    </div>
   </section>
 } @else {
   <section class="empty-state">

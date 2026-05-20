@@ -37,7 +37,7 @@ export class ShelfStorage {
         onEntries(entries);
 
         if (!snapshot.exists()) {
-          void this.write(userId, entries);
+          void this.write(userId, entries).catch(() => undefined);
         }
       },
       () => {

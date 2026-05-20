@@ -45,7 +45,8 @@ h3 {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   min-height: 46px;
   padding: 0 14px;
@@ -56,8 +57,16 @@ h3 {
   outline: none;
 }
 
+.field textarea {
+  min-height: 116px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   border-color: #267a71;
   box-shadow: 0 0 0 4px rgba(38, 122, 113, 0.14);
 }
@@ -69,7 +78,8 @@ h3 {
 }
 
 .status-group button,
-.ghost-button {
+.ghost-button,
+.primary-button {
   min-height: 40px;
   border: 1px solid rgba(21, 21, 21, 0.14);
   border-radius: 999px;
@@ -88,7 +98,8 @@ h3 {
 }
 
 .status-group button:hover,
-.ghost-button:hover {
+.ghost-button:hover,
+.primary-button:hover {
   transform: translateY(-1px);
 }
 
@@ -103,6 +114,14 @@ h3 {
   padding: 0 16px;
   color: #151515;
   background: transparent;
+}
+
+.primary-button {
+  width: 100%;
+  padding: 0 18px;
+  color: #ffffff;
+  background: #151515;
+  font-weight: 900;
 }
 
 .catalog-panel {
@@ -147,11 +166,127 @@ h3 {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.catalog-editor {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid rgba(21, 21, 21, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+}
+
+.editor-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.catalog-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.wide-field {
+  grid-column: span 2;
+}
+
+.progress-field {
+  align-content: end;
+}
+
+.progress-field input {
+  padding: 0;
+  accent-color: #267a71;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bottom-actions {
+  grid-column: 1 / -1;
+}
+
+.save-button,
+.secondary-button,
+.danger-button,
+.danger-ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.save-button:hover,
+.secondary-button:hover,
+.danger-button:hover,
+.danger-ghost-button:hover {
+  transform: translateY(-1px);
+}
+
+.save-button {
+  border: 1px solid #151515;
+  color: #ffffff;
+  background: #151515;
+}
+
+.secondary-button {
+  border: 1px solid rgba(21, 21, 21, 0.16);
+  color: #151515;
+  background: #ffffff;
+}
+
+.secondary-button.compact,
+.danger-ghost-button {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+}
+
+.danger-button {
+  border: 1px solid #b4452c;
+  color: #ffffff;
+  background: #b4452c;
+}
+
+.danger-ghost-button {
+  border: 1px solid rgba(180, 69, 44, 0.28);
+  color: #b4452c;
+  background: #fff7f2;
+}
+
 .section-heading {
   display: flex;
   align-items: end;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 16px;
+}
+
+.catalog-message {
+  width: fit-content;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #151515;
+  background: #f4b942;
+  font-size: 0.86rem;
+  font-weight: 900;
 }
 
 .game-grid {
@@ -161,6 +296,8 @@ h3 {
 }
 
 .game-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   min-height: 420px;
   border: 1px solid rgba(21, 21, 21, 0.1);
@@ -180,6 +317,7 @@ h3 {
 .game-link {
   display: grid;
   grid-template-rows: 170px 1fr;
+  flex: 1;
   min-height: 420px;
 }
 
@@ -214,13 +352,32 @@ h3 {
   gap: 12px;
 }
 
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+
 @media (max-width: 900px) {
-  .workspace {
+  .workspace,
+  .catalog-form {
     grid-template-columns: 1fr;
   }
 
   .filters {
     position: static;
+  }
+
+  .editor-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wide-field {
+    grid-column: auto;
   }
 }
 
@@ -232,6 +389,18 @@ h3 {
 
   .stats-strip {
     grid-template-columns: 1fr;
+  }
+
+  .editor-actions,
+  .card-actions {
+    justify-content: stretch;
+  }
+
+  .save-button,
+  .secondary-button,
+  .danger-button,
+  .danger-ghost-button {
+    flex: 1 1 150px;
   }
 
   .game-card,
