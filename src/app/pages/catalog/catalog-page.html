@@ -108,31 +108,33 @@
           </div>
         </div>
 
-        <section class="rawg-import" aria-labelledby="rawg-import-title">
-          <div class="rawg-heading">
-            <div>
-              <p class="eyebrow">API esterna</p>
-              <h3 id="rawg-import-title">Import RAWG</h3>
-            </div>
-            <a href="https://rawg.io/" target="_blank" rel="noreferrer">RAWG</a>
-          </div>
+        <div class="input-mode-tabs" aria-label="Tipo inserimento">
+          <button
+            type="button"
+            [class.is-active]="inputMode() === 'manual'"
+            (click)="selectInputMode('manual')"
+          >
+            Manuale
+          </button>
+          <button
+            type="button"
+            [class.is-active]="inputMode() === 'rawg'"
+            (click)="selectInputMode('rawg')"
+          >
+            Da RAWG
+          </button>
+        </div>
 
-          @if (!rawgApiKeyConfigured()) {
-            <div class="rawg-key-row">
-              <label class="field">
-                <span>API key RAWG</span>
-                <input
-                  type="password"
-                  autocomplete="off"
-                  [ngModel]="rawgApiKeyDraft()"
-                  (ngModelChange)="updateRawgApiKeyDraft($event)"
-                />
-              </label>
-              <button class="secondary-button" type="button" (click)="saveRawgApiKey()">
-                Salva key
-              </button>
+        @if (inputMode() === 'rawg') {
+          <section class="rawg-import" aria-labelledby="rawg-import-title">
+            <div class="rawg-heading">
+              <div>
+                <p class="eyebrow">API esterna</p>
+                <h3 id="rawg-import-title">Import RAWG</h3>
+              </div>
+              <a href="https://rawg.io/" target="_blank" rel="noreferrer">RAWG</a>
             </div>
-          } @else {
+
             <div class="rawg-search-row">
               <label class="field">
                 <span>Titolo su RAWG</span>
@@ -151,64 +153,67 @@
               >
                 {{ rawgBusy() ? 'Cerco...' : 'Cerca' }}
               </button>
-              <button
-                class="danger-ghost-button"
-                type="button"
-                [disabled]="rawgBusy() || rawgImportingId() !== null"
-                (click)="clearRawgApiKey()"
-              >
-                Rimuovi key
-              </button>
             </div>
-          }
 
-          @if (rawgMessage()) {
-            <p [class]="'rawg-message is-' + rawgMessageTone()">{{ rawgMessage() }}</p>
-          }
+            @if (rawgMessage()) {
+              <p [class]="'rawg-message is-' + rawgMessageTone()">{{ rawgMessage() }}</p>
+            }
 
-          @if (rawgResults().length) {
-            <div class="rawg-results" aria-label="Risultati RAWG">
-              @for (result of rawgResults(); track result.rawgId) {
-                <article class="rawg-result">
-                  <div
-                    class="rawg-thumb"
-                    [style.background-image]="coverImageStyle(result)"
-                    aria-hidden="true"
-                  ></div>
-                  <div>
-                    <strong>{{ result.title }}</strong>
-                    <span>
-                      {{ result.releaseYear }} &middot;
-                      {{ result.genres.length ? result.genres.join(', ') : 'Genere n/d' }}
-                    </span>
-                    <span>
-                      {{
-                        result.platforms.length ? result.platforms.join(', ') : 'Piattaforme n/d'
-                      }}
-                    </span>
-                  </div>
-                  <button
-                    class="save-button"
-                    type="button"
-                    [disabled]="rawgImportingId() !== null"
-                    (click)="importRawgGame(result)"
-                  >
-                    {{ rawgImportingId() === result.rawgId ? 'Importo...' : 'Importa' }}
-                  </button>
-                </article>
+            @if (rawgResults().length) {
+              <div class="rawg-results" aria-label="Risultati RAWG">
+                @for (result of rawgResults(); track result.rawgId) {
+                  <article class="rawg-result">
+                    <div
+                      class="rawg-thumb"
+                      [style.background-image]="coverImageStyle(result)"
+                      aria-hidden="true"
+                    ></div>
+                    <div>
+                      <strong>{{ result.title }}</strong>
+                      <span>
+                        {{ result.releaseYear }} &middot;
+                        {{ result.genres.length ? result.genres.join(', ') : 'Genere n/d' }}
+                      </span>
+                      <span>
+                        {{
+                          result.platforms.length ? result.platforms.join(', ') : 'Piattaforme n/d'
+                        }}
+                      </span>
+                    </div>
+                    <button
+                      class="save-button"
+                      type="button"
+                      [disabled]="rawgImportingId() !== null"
+                      (click)="importRawgGame(result)"
+                    >
+                      {{ rawgImportingId() === result.rawgId ? 'Importo...' : 'Importa' }}
+                    </button>
+                  </article>
+                }
+              </div>
+
+              @if (rawgHasMore()) {
+                <button
+                  class="secondary-button rawg-more-button"
+                  type="button"
+                  [disabled]="rawgBusy()"
+                  (click)="loadMoreRawgGames()"
+                >
+                  {{ rawgLoadingMore() ? 'Carico...' : 'Carica altri' }}
+                </button>
               }
-            </div>
-          }
+            }
 
-          @if (form().sourceUrl) {
-            <p class="rawg-source">
-              Fonte:
-              <a [href]="form().sourceUrl" target="_blank" rel="noreferrer">
-                {{ form().sourceName || 'RAWG' }}
-              </a>
-            </p>
-          }
-        </section>
+            @if (form().sourceUrl) {
+              <p class="rawg-source">
+                Fonte:
+                <a [href]="form().sourceUrl" target="_blank" rel="noreferrer">
+                  {{ form().sourceName || 'RAWG' }}
+                </a>
+              </p>
+            }
+          </section>
+        }
 
         <div class="catalog-form">
           <label class="field">

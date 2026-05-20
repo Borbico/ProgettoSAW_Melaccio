@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { doc, getDoc } from 'firebase/firestore';
+import { FirebaseClient } from './firebase-client';
 
 export interface RawgGameSummary {
   rawgId: number;
@@ -8,6 +10,13 @@ export interface RawgGameSummary {
   platforms: string[];
   coverImageUrl: string;
   sourceUrl: string;
+}
+
+export interface RawgSearchResult {
+  games: RawgGameSummary[];
+  hasMore: boolean;
+  page: number;
+  total: number;
 }
 
 export interface RawgImportedGame {
@@ -44,6 +53,8 @@ interface RawgGameListItem {
 }
 
 interface RawgSearchResponse {
+  count?: number;
+  next?: string | null;
   results?: RawgGameListItem[];
 }
 
@@ -58,9 +69,11 @@ interface RawgGameDetail extends RawgGameListItem {
   providedIn: 'root',
 })
 export class RawgGames {
+  private readonly firebase = inject(FirebaseClient);
   private readonly baseUrl = 'https://api.rawg.io/api';
   private readonly apiKeyStorageKey = 'gameshelf:rawg-api-key';
   private readonly apiKeyState = signal(this.readApiKey());
+  private remoteApiKeyRequest: Promise<string> | null = null;
 
   readonly apiKeyConfigured = signal(Boolean(this.apiKeyState()));
 
@@ -88,23 +101,34 @@ export class RawgGames {
     this.apiKeyConfigured.set(false);
   }
 
-  async searchGames(query: string): Promise<RawgGameSummary[]> {
+  async searchGames(query: string, page = 1, pageSize = 12): Promise<RawgSearchResult> {
     const normalizedQuery = query.trim();
 
     if (!normalizedQuery) {
-      return [];
+      return {
+        games: [],
+        hasMore: false,
+        page,
+        total: 0,
+      };
     }
 
     const url = this.rawgUrl('/games', {
       search: normalizedQuery,
-      page_size: '6',
+      page: String(page),
+      page_size: String(pageSize),
       ordering: '-metacritic',
     });
     const data = await this.fetchJson<RawgSearchResponse>(url);
 
-    return (data.results ?? [])
-      .map((game) => this.mapSummary(game))
-      .filter((game): game is RawgGameSummary => Boolean(game));
+    return {
+      games: (data.results ?? [])
+        .map((game) => this.mapSummary(game))
+        .filter((game): game is RawgGameSummary => Boolean(game)),
+      hasMore: Boolean(data.next),
+      page,
+      total: data.count ?? 0,
+    };
   }
 
   async getGameDetails(rawgId: number): Promise<RawgImportedGame> {
@@ -114,14 +138,7 @@ export class RawgGames {
   }
 
   private rawgUrl(path: string, params: Record<string, string> = {}): URL {
-    const apiKey = this.apiKeyState().trim();
-
-    if (!apiKey) {
-      throw new Error('RAWG_API_KEY_MISSING');
-    }
-
     const url = new URL(`${this.baseUrl}${path}`);
-    url.searchParams.set('key', apiKey);
 
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
@@ -130,7 +147,32 @@ export class RawgGames {
     return url;
   }
 
+  private async apiKey(): Promise<string> {
+    const localApiKey = this.apiKeyState().trim();
+
+    if (localApiKey) {
+      return localApiKey;
+    }
+
+    if (!this.remoteApiKeyRequest) {
+      this.remoteApiKeyRequest = this.readRemoteApiKey();
+    }
+
+    const remoteApiKey = await this.remoteApiKeyRequest;
+
+    if (!remoteApiKey) {
+      throw new Error('RAWG_API_KEY_MISSING');
+    }
+
+    this.apiKeyState.set(remoteApiKey);
+    this.apiKeyConfigured.set(true);
+
+    return remoteApiKey;
+  }
+
   private async fetchJson<T>(url: URL): Promise<T> {
+    url.searchParams.set('key', await this.apiKey());
+
     const response = await fetch(url.toString());
 
     if (!response.ok) {
@@ -242,6 +284,13 @@ export class RawgGames {
     }
 
     return localStorage.getItem(this.apiKeyStorageKey)?.trim() ?? '';
+  }
+
+  private async readRemoteApiKey(): Promise<string> {
+    const snapshot = await getDoc(doc(this.firebase.db, 'catalog', 'default'));
+    const apiKey = snapshot.data()?.['rawgApiKey'];
+
+    return typeof apiKey === 'string' ? apiKey.trim() : '';
   }
 
   private hasStorage(): boolean {

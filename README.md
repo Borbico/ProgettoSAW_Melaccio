@@ -47,9 +47,12 @@ ng test
 ## RAWG import
 
 Gli utenti admin possono usare l'integrazione RAWG dal form di creazione/modifica del catalogo.
-La API key RAWG non viene salvata nel repository: si inserisce dal pannello admin e resta nel
-localStorage del browser. Dopo la ricerca, i dati importati compilano la scheda del gioco, ma il
-catalogo viene aggiornato solo premendo il pulsante `Salva`.
+La API key RAWG non viene versionata nel repository: per la demo e configurata su Firestore e viene
+recuperata automaticamente dall'app. Dopo la ricerca, i dati importati compilano la scheda del gioco,
+ma il catalogo viene aggiornato solo premendo il pulsante `Salva`.
+
+La documentazione di supporto per configurazione, uso e motivazioni dell'integrazione si trova in
+[`docs/rawg-integration.md`](docs/rawg-integration.md).
 
 ## Running end-to-end tests
 

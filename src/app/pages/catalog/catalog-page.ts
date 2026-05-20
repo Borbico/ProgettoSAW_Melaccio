@@ -5,9 +5,15 @@ import { CatalogGame } from '../../models/catalog-game';
 import { AccessControl } from '../../services/access-control';
 import { GameCatalog, PersistenceResult } from '../../services/game-catalog';
 import { NotificationCenter, NotificationTone } from '../../services/notification-center';
-import { RawgGameSummary, RawgGames, RawgImportedGame } from '../../services/rawg-games';
+import {
+  RawgGameSummary,
+  RawgGames,
+  RawgImportedGame,
+  RawgSearchResult,
+} from '../../services/rawg-games';
 
 type CatalogEditorMode = 'closed' | 'create' | 'edit';
+type CatalogInputMode = 'manual' | 'rawg';
 
 interface CatalogForm {
   title: string;
@@ -47,17 +53,19 @@ export class CatalogPage {
   protected readonly catalogMessageTone = signal<NotificationTone>('info');
   protected readonly catalogBusy = signal(false);
   protected readonly form = signal<CatalogForm>(this.emptyForm());
+  protected readonly inputMode = signal<CatalogInputMode>('manual');
   protected readonly rawgQuery = signal('');
-  protected readonly rawgApiKeyDraft = signal('');
   protected readonly rawgResults = signal<RawgGameSummary[]>([]);
   protected readonly rawgMessage = signal('');
   protected readonly rawgMessageTone = signal<NotificationTone>('info');
   protected readonly rawgBusy = signal(false);
+  protected readonly rawgLoadingMore = signal(false);
   protected readonly rawgImportingId = signal<number | null>(null);
+  protected readonly rawgPage = signal(1);
+  protected readonly rawgHasMore = signal(false);
 
   protected readonly canEditCatalog = this.access.canEditCatalog;
   protected readonly roleLabel = this.access.roleLabel;
-  protected readonly rawgApiKeyConfigured = this.rawg.apiKeyConfigured;
   protected readonly games = this.catalog.games;
   protected readonly genres = computed(() => this.uniqueValues('genre'));
   protected readonly platforms = computed(() => this.uniqueValues('platform'));
@@ -122,28 +130,16 @@ export class CatalogPage {
     this.rawgQuery.set(query);
   }
 
-  protected updateRawgApiKeyDraft(apiKey: string): void {
-    this.rawgApiKeyDraft.set(apiKey);
-  }
+  protected selectInputMode(mode: CatalogInputMode): void {
+    this.inputMode.set(mode);
 
-  protected saveRawgApiKey(): void {
-    const apiKey = this.rawgApiKeyDraft().trim();
-
-    if (!apiKey) {
-      this.setRawgFeedback('warning', 'Inserisci una API key RAWG valida.');
+    if (mode === 'manual') {
+      this.rawgResults.set([]);
+      this.clearRawgFeedback();
       return;
     }
 
-    this.rawg.setApiKey(apiKey);
-    this.rawgApiKeyDraft.set('');
-    this.setRawgFeedback('success', 'API key RAWG salvata in questo browser.');
-    this.notifications.success('RAWG configurato', 'Ora puoi cercare giochi da importare.');
-  }
-
-  protected clearRawgApiKey(): void {
-    this.rawg.clearApiKey();
-    this.rawgResults.set([]);
-    this.setRawgFeedback('info', 'API key RAWG rimossa da questo browser.');
+    this.rawgQuery.set(this.form().title || this.rawgQuery());
   }
 
   protected async searchRawgGames(): Promise<void> {
@@ -155,8 +151,47 @@ export class CatalogPage {
       return;
     }
 
-    if (!this.rawgApiKeyConfigured()) {
-      this.setRawgFeedback('warning', 'Configura la API key RAWG prima della ricerca.');
+    const query = this.rawgQuery().trim();
+
+    if (!query) {
+      this.setRawgFeedback('warning', 'Inserisci un titolo da cercare su RAWG.');
+      return;
+    }
+
+    this.rawgBusy.set(true);
+    this.rawgLoadingMore.set(false);
+    this.rawgResults.set([]);
+    this.rawgPage.set(1);
+    this.rawgHasMore.set(false);
+    this.setRawgFeedback('info', 'Ricerca su RAWG in corso...');
+
+    try {
+      const result = await this.rawg.searchGames(query);
+      this.applyRawgSearchResult(result);
+
+      if (!result.games.length) {
+        this.setRawgFeedback('warning', 'Nessun risultato trovato su RAWG.');
+        return;
+      }
+
+      this.setRawgFeedback('success', this.rawgResultsMessage(result));
+    } catch {
+      this.setRawgFeedback('error', 'Ricerca RAWG non riuscita. Riprova tra qualche secondo.');
+      this.notifications.error(
+        'RAWG non raggiungibile',
+        'Non e stato possibile recuperare dati dalla API esterna.',
+      );
+    } finally {
+      this.rawgBusy.set(false);
+    }
+  }
+
+  protected async loadMoreRawgGames(): Promise<void> {
+    if (this.rawgBusy() || !this.rawgHasMore()) {
+      return;
+    }
+
+    if (!this.ensureCatalogPermission()) {
       return;
     }
 
@@ -168,27 +203,27 @@ export class CatalogPage {
     }
 
     this.rawgBusy.set(true);
-    this.rawgResults.set([]);
-    this.setRawgFeedback('info', 'Ricerca su RAWG in corso...');
+    this.rawgLoadingMore.set(true);
+    this.setRawgFeedback('info', 'Carico altri risultati RAWG...');
 
     try {
-      const results = await this.rawg.searchGames(query);
-      this.rawgResults.set(results);
+      const result = await this.rawg.searchGames(query, this.rawgPage() + 1);
+      const knownIds = new Set(this.rawgResults().map((game) => game.rawgId));
+      const newGames = result.games.filter((game) => !knownIds.has(game.rawgId));
 
-      if (!results.length) {
-        this.setRawgFeedback('warning', 'Nessun risultato trovato su RAWG.');
-        return;
-      }
-
-      this.setRawgFeedback('success', `${results.length} risultati trovati su RAWG.`);
+      this.rawgResults.update((games) => [...games, ...newGames]);
+      this.rawgPage.set(result.page);
+      this.rawgHasMore.set(result.hasMore);
+      this.setRawgFeedback('success', this.rawgResultsMessage(result));
     } catch {
-      this.setRawgFeedback('error', 'Ricerca RAWG non riuscita. Controlla la API key.');
+      this.setRawgFeedback('error', 'Non e stato possibile caricare altri risultati RAWG.');
       this.notifications.error(
         'RAWG non raggiungibile',
-        'Non e stato possibile recuperare dati dalla API esterna.',
+        'Non e stato possibile recuperare altri risultati dalla API esterna.',
       );
     } finally {
       this.rawgBusy.set(false);
+      this.rawgLoadingMore.set(false);
     }
   }
 
@@ -229,6 +264,7 @@ export class CatalogPage {
     }
 
     this.form.set(this.emptyForm());
+    this.inputMode.set('manual');
     this.rawgQuery.set(this.searchTerm());
     this.rawgResults.set([]);
     this.editorMode.set('create');
@@ -244,6 +280,7 @@ export class CatalogPage {
     }
 
     this.form.set(this.formFromGame(game));
+    this.inputMode.set('manual');
     this.rawgQuery.set(game.title);
     this.rawgResults.set([]);
     this.editorMode.set('edit');
@@ -257,7 +294,9 @@ export class CatalogPage {
     this.editorMode.set('closed');
     this.editingGameId.set(null);
     this.form.set(this.emptyForm());
+    this.inputMode.set('manual');
     this.rawgResults.set([]);
+    this.rawgHasMore.set(false);
   }
 
   protected updateForm<K extends keyof CatalogForm>(field: K, value: CatalogForm[K]): void {
@@ -435,6 +474,20 @@ export class CatalogPage {
     this.rawgMessage.set(message);
   }
 
+  private applyRawgSearchResult(result: RawgSearchResult): void {
+    this.rawgResults.set(result.games);
+    this.rawgPage.set(result.page);
+    this.rawgHasMore.set(result.hasMore);
+  }
+
+  private rawgResultsMessage(result: RawgSearchResult): string {
+    const loadedResults = this.rawgResults().length;
+    const total = result.total ? ` su ${result.total}` : '';
+    const suffix = this.rawgHasMore() ? ' Puoi caricarne altri.' : '';
+
+    return `${loadedResults}${total} risultati RAWG mostrati.${suffix}`;
+  }
+
   private clearCatalogFeedback(): void {
     this.catalogMessage.set('');
     this.catalogMessageTone.set('info');
@@ -443,6 +496,7 @@ export class CatalogPage {
   private clearRawgFeedback(): void {
     this.rawgMessage.set('');
     this.rawgMessageTone.set('info');
+    this.rawgHasMore.set(false);
   }
 
   private notifyPersistence(

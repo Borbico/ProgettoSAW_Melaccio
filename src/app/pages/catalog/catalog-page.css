@@ -71,13 +71,6 @@ h3 {
   box-shadow: 0 0 0 4px rgba(38, 122, 113, 0.14);
 }
 
-.status-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.status-group button,
 .ghost-button,
 .primary-button {
   min-height: 40px;
@@ -91,22 +84,9 @@ h3 {
     transform 180ms ease;
 }
 
-.status-group button {
-  padding: 0 14px;
-  color: #444444;
-  background: #ffffff;
-}
-
-.status-group button:hover,
 .ghost-button:hover,
 .primary-button:hover {
   transform: translateY(-1px);
-}
-
-.status-group button.is-active {
-  border-color: #267a71;
-  color: #ffffff;
-  background: #267a71;
 }
 
 .ghost-button {
@@ -197,6 +177,32 @@ h3 {
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
 
+.input-mode-tabs {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid rgba(21, 21, 21, 0.1);
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.input-mode-tabs button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  color: #444444;
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.input-mode-tabs button.is-active {
+  color: #ffffff;
+  background: #151515;
+}
+
 .rawg-import {
   display: grid;
   gap: 16px;
@@ -207,7 +213,6 @@ h3 {
 }
 
 .rawg-heading,
-.rawg-key-row,
 .rawg-search-row {
   display: flex;
   align-items: end;
@@ -222,7 +227,6 @@ h3 {
   font-weight: 900;
 }
 
-.rawg-key-row .field,
 .rawg-search-row .field {
   flex: 1 1 260px;
 }
@@ -261,6 +265,10 @@ h3 {
 .rawg-results {
   display: grid;
   gap: 10px;
+}
+
+.rawg-more-button {
+  width: fit-content;
 }
 
 .rawg-result {
@@ -334,15 +342,6 @@ h3 {
   background: rgba(0, 0, 0, 0.46);
   font-size: 0.75rem;
   font-weight: 900;
-}
-
-.progress-field {
-  align-content: end;
-}
-
-.progress-field input {
-  padding: 0;
-  accent-color: #267a71;
 }
 
 .editor-actions {
@@ -561,7 +560,6 @@ h3 {
   }
 
   .rawg-heading,
-  .rawg-key-row,
   .rawg-search-row,
   .rawg-result {
     align-items: stretch;
