@@ -1,27 +1,41 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthSession } from '../../services/auth-session';
+import { AccessControl } from '../../services/access-control';
 import { GameCatalog } from '../../services/game-catalog';
+import { NotificationCenter, NotificationTone } from '../../services/notification-center';
 
 @Component({
   selector: 'app-profile-page',
   imports: [FormsModule],
   templateUrl: './profile-page.html',
-  styleUrl: './profile-page.css'
+  styleUrl: './profile-page.css',
 })
 export class ProfilePage {
+  private readonly access = inject(AccessControl);
   private readonly auth = inject(AuthSession);
   private readonly catalog = inject(GameCatalog);
+  private readonly notifications = inject(NotificationCenter);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly user = this.auth.currentUser;
   protected readonly authReady = this.auth.authReady;
+  protected readonly roleLabel = this.access.roleLabel;
+  protected readonly canEditCatalog = this.access.canEditCatalog;
+  protected readonly canEditShelf = this.access.canEditShelf;
   protected readonly signInEmail = signal('');
   protected readonly signInPassword = signal('');
   protected readonly registerName = signal('');
   protected readonly registerEmail = signal('');
   protected readonly registerPassword = signal('');
   protected readonly authMessage = signal('');
-  protected readonly games = this.catalog.games;
+  protected readonly authMessageTone = signal<NotificationTone>('info');
+  protected readonly signInBusy = signal(false);
+  protected readonly registerBusy = signal(false);
+  protected readonly authBusy = computed(() => this.signInBusy() || this.registerBusy());
+  protected readonly games = this.catalog.shelfGames;
   protected readonly favoriteGenres = computed(() => {
     const counts = this.games().reduce<Record<string, number>>((genres, game) => {
       genres[game.genre] = (genres[game.genre] ?? 0) + 1;
@@ -35,7 +49,7 @@ export class ProfilePage {
   });
 
   protected readonly totalHours = computed(() =>
-    this.games().reduce((total, game) => total + game.hoursPlayed, 0)
+    this.games().reduce((total, game) => total + game.hoursPlayed, 0),
   );
 
   protected updateSignInEmail(email: string): void {
@@ -59,38 +73,95 @@ export class ProfilePage {
   }
 
   protected async signIn(): Promise<void> {
-    if (!this.signInEmail().trim() || !this.signInPassword()) {
-      this.authMessage.set('Inserisci email e password.');
+    if (this.authBusy()) {
       return;
     }
 
+    if (!this.signInEmail().trim() || !this.signInPassword()) {
+      this.setAuthFeedback('warning', 'Inserisci email e password.');
+      return;
+    }
+
+    this.signInBusy.set(true);
+
     try {
       await this.auth.signIn(this.signInEmail(), this.signInPassword());
-      this.authMessage.set('Accesso effettuato.');
+      this.setAuthFeedback('success', 'Accesso effettuato.');
+      this.signInPassword.set('');
+      await this.redirectAfterAuth();
     } catch {
-      this.authMessage.set('Accesso non riuscito. Controlla email e password.');
+      this.setAuthFeedback('error', 'Accesso non riuscito. Controlla email e password.');
+    } finally {
+      this.signInBusy.set(false);
     }
   }
 
   protected async register(): Promise<void> {
-    if (!this.registerEmail().trim() || this.registerPassword().length < 6) {
-      this.authMessage.set('Inserisci una email valida e una password di almeno 6 caratteri.');
+    if (this.authBusy()) {
       return;
     }
+
+    if (!this.registerEmail().trim() || this.registerPassword().length < 6) {
+      this.setAuthFeedback(
+        'warning',
+        'Inserisci una email valida e una password di almeno 6 caratteri.',
+      );
+      return;
+    }
+
+    this.registerBusy.set(true);
 
     try {
       await this.auth.register(this.registerName(), this.registerEmail(), this.registerPassword());
       this.registerName.set('');
       this.registerEmail.set('');
       this.registerPassword.set('');
-      this.authMessage.set('Profilo creato.');
+      this.setAuthFeedback('success', 'Profilo creato.');
+      await this.redirectAfterAuth();
     } catch {
-      this.authMessage.set('Registrazione non riuscita. La email potrebbe essere gia in uso.');
+      this.setAuthFeedback(
+        'error',
+        'Registrazione non riuscita. La email potrebbe essere gia in uso.',
+      );
+    } finally {
+      this.registerBusy.set(false);
     }
   }
 
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
-    this.authMessage.set('Sessione terminata.');
+    this.setAuthFeedback('info', 'Sessione terminata.');
+  }
+
+  private setAuthFeedback(tone: NotificationTone, message: string): void {
+    this.authMessageTone.set(tone);
+    this.authMessage.set(message);
+
+    if (tone === 'success') {
+      this.notifications.success('Profilo', message);
+      return;
+    }
+
+    if (tone === 'warning') {
+      this.notifications.warning('Controlla i dati', message);
+      return;
+    }
+
+    if (tone === 'error') {
+      this.notifications.error('Operazione non riuscita', message);
+      return;
+    }
+
+    this.notifications.info('Profilo', message);
+  }
+
+  private redirectAfterAuth(): Promise<boolean> {
+    const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
+
+    if (!redirectTo || !redirectTo.startsWith('/') || redirectTo.startsWith('//')) {
+      return Promise.resolve(false);
+    }
+
+    return this.router.navigateByUrl(redirectTo);
   }
 }

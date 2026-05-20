@@ -1,7 +1,7 @@
 <section class="workspace" aria-labelledby="catalog-title">
   <aside class="filters" aria-label="Filtri catalogo">
     <div>
-      <p class="eyebrow">Catalogo personale</p>
+      <p class="eyebrow">Catalogo giochi</p>
       <h1 id="catalog-title">Videogiochi da scoprire, seguire e completare.</h1>
     </div>
 
@@ -35,37 +35,50 @@
       </select>
     </label>
 
-    <div class="status-group" aria-label="Stato">
-      @for (status of statuses; track status) {
-        <button
-          type="button"
-          [class.is-active]="selectedStatus() === status"
-          (click)="updateStatus(status)"
-        >
-          {{ status }}
-        </button>
-      }
-    </div>
-
     <button class="ghost-button" type="button" (click)="resetFilters()">Azzera filtri</button>
-    <button class="primary-button" type="button" (click)="startCreate()">Nuovo gioco</button>
+    @if (canEditCatalog()) {
+      <button
+        class="primary-button"
+        type="button"
+        [disabled]="catalogBusy()"
+        (click)="startCreate()"
+      >
+        Nuovo gioco
+      </button>
+    }
   </aside>
 
   <section class="catalog-panel" id="catalogo">
-    <div class="stats-strip" aria-label="Statistiche catalogo">
+    <div class="stats-strip" aria-label="Numeri catalogo">
       <div>
         <strong>{{ games().length }}</strong>
         <span>giochi</span>
       </div>
       <div>
-        <strong>{{ completedGames() }}</strong>
-        <span>completati</span>
+        <strong>{{ genreCount() }}</strong>
+        <span>generi</span>
       </div>
       <div>
-        <strong>{{ totalHours() }}</strong>
-        <span>ore registrate</span>
+        <strong>{{ platformCount() }}</strong>
+        <span>piattaforme</span>
       </div>
     </div>
+
+    <section class="permission-banner" [class.is-admin]="canEditCatalog()">
+      <div>
+        <p class="eyebrow">{{ roleLabel() }}</p>
+        @if (canEditCatalog()) {
+          <h2>Gestione catalogo abilitata.</h2>
+          <p>Puoi aggiungere, modificare ed eliminare giochi dal catalogo condiviso.</p>
+        } @else {
+          <h2>Catalogo in sola lettura.</h2>
+          <p>
+            Puoi consultare schede, descrizioni e dati generali; la gestione del catalogo e
+            riservata agli admin.
+          </p>
+        }
+      </div>
+    </section>
 
     @if (editorOpen()) {
       <section class="catalog-editor" aria-labelledby="catalog-editor-title">
@@ -76,10 +89,126 @@
           </div>
 
           <div class="editor-actions top-actions">
-            <button class="secondary-button" type="button" (click)="cancelEditor()">Chiudi</button>
-            <button class="save-button" type="button" (click)="saveGame()">Salva</button>
+            <button
+              class="secondary-button"
+              type="button"
+              [disabled]="catalogBusy()"
+              (click)="cancelEditor()"
+            >
+              Chiudi
+            </button>
+            <button
+              class="save-button"
+              type="button"
+              [disabled]="catalogBusy()"
+              (click)="saveGame()"
+            >
+              {{ catalogBusy() ? 'Salvataggio...' : 'Salva' }}
+            </button>
           </div>
         </div>
+
+        <section class="rawg-import" aria-labelledby="rawg-import-title">
+          <div class="rawg-heading">
+            <div>
+              <p class="eyebrow">API esterna</p>
+              <h3 id="rawg-import-title">Import RAWG</h3>
+            </div>
+            <a href="https://rawg.io/" target="_blank" rel="noreferrer">RAWG</a>
+          </div>
+
+          @if (!rawgApiKeyConfigured()) {
+            <div class="rawg-key-row">
+              <label class="field">
+                <span>API key RAWG</span>
+                <input
+                  type="password"
+                  autocomplete="off"
+                  [ngModel]="rawgApiKeyDraft()"
+                  (ngModelChange)="updateRawgApiKeyDraft($event)"
+                />
+              </label>
+              <button class="secondary-button" type="button" (click)="saveRawgApiKey()">
+                Salva key
+              </button>
+            </div>
+          } @else {
+            <div class="rawg-search-row">
+              <label class="field">
+                <span>Titolo su RAWG</span>
+                <input
+                  type="search"
+                  placeholder="Cerca un gioco"
+                  [ngModel]="rawgQuery()"
+                  (ngModelChange)="updateRawgQuery($event)"
+                />
+              </label>
+              <button
+                class="secondary-button"
+                type="button"
+                [disabled]="rawgBusy()"
+                (click)="searchRawgGames()"
+              >
+                {{ rawgBusy() ? 'Cerco...' : 'Cerca' }}
+              </button>
+              <button
+                class="danger-ghost-button"
+                type="button"
+                [disabled]="rawgBusy() || rawgImportingId() !== null"
+                (click)="clearRawgApiKey()"
+              >
+                Rimuovi key
+              </button>
+            </div>
+          }
+
+          @if (rawgMessage()) {
+            <p [class]="'rawg-message is-' + rawgMessageTone()">{{ rawgMessage() }}</p>
+          }
+
+          @if (rawgResults().length) {
+            <div class="rawg-results" aria-label="Risultati RAWG">
+              @for (result of rawgResults(); track result.rawgId) {
+                <article class="rawg-result">
+                  <div
+                    class="rawg-thumb"
+                    [style.background-image]="coverImageStyle(result)"
+                    aria-hidden="true"
+                  ></div>
+                  <div>
+                    <strong>{{ result.title }}</strong>
+                    <span>
+                      {{ result.releaseYear }} &middot;
+                      {{ result.genres.length ? result.genres.join(', ') : 'Genere n/d' }}
+                    </span>
+                    <span>
+                      {{
+                        result.platforms.length ? result.platforms.join(', ') : 'Piattaforme n/d'
+                      }}
+                    </span>
+                  </div>
+                  <button
+                    class="save-button"
+                    type="button"
+                    [disabled]="rawgImportingId() !== null"
+                    (click)="importRawgGame(result)"
+                  >
+                    {{ rawgImportingId() === result.rawgId ? 'Importo...' : 'Importa' }}
+                  </button>
+                </article>
+              }
+            </div>
+          }
+
+          @if (form().sourceUrl) {
+            <p class="rawg-source">
+              Fonte:
+              <a [href]="form().sourceUrl" target="_blank" rel="noreferrer">
+                {{ form().sourceName || 'RAWG' }}
+              </a>
+            </p>
+          }
+        </section>
 
         <div class="catalog-form">
           <label class="field">
@@ -159,6 +288,16 @@
             </select>
           </label>
 
+          @if (form().coverImageUrl) {
+            <div
+              class="rawg-cover-preview"
+              [style.background-image]="coverImageStyle(form())"
+              aria-label="Copertina importata"
+            >
+              <span>RAWG</span>
+            </div>
+          }
+
           <label class="field wide-field">
             <span>Tag</span>
             <input
@@ -177,71 +316,23 @@
             ></textarea>
           </label>
 
-          <label class="field">
-            <span>Stato iniziale</span>
-            <select [ngModel]="form().status" (ngModelChange)="updateForm('status', $event)">
-              @for (status of gameStatuses; track status) {
-                <option [value]="status">{{ status }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Ore</span>
-            <input
-              type="number"
-              min="0"
-              max="999"
-              [ngModel]="form().hoursPlayed"
-              (ngModelChange)="updateForm('hoursPlayed', $event)"
-            />
-          </label>
-
-          <label class="field">
-            <span>Voto</span>
-            <select [ngModel]="form().rating" (ngModelChange)="updateForm('rating', $event)">
-              <option [value]="0">Da valutare</option>
-              <option [value]="1">1 stella</option>
-              <option [value]="2">2 stelle</option>
-              <option [value]="3">3 stelle</option>
-              <option [value]="4">4 stelle</option>
-              <option [value]="5">5 stelle</option>
-            </select>
-          </label>
-
-          <label class="field progress-field">
-            <span>Progresso: {{ form().progress }}%</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              [ngModel]="form().progress"
-              (ngModelChange)="updateForm('progress', $event)"
-            />
-          </label>
-
-          <label class="field wide-field">
-            <span>Obiettivo personale</span>
-            <input
-              type="text"
-              [ngModel]="form().personalGoal"
-              (ngModelChange)="updateForm('personalGoal', $event)"
-            />
-          </label>
-
-          <label class="field wide-field">
-            <span>Note personali</span>
-            <textarea
-              rows="4"
-              [ngModel]="form().notes"
-              (ngModelChange)="updateForm('notes', $event)"
-            ></textarea>
-          </label>
-
           <div class="editor-actions bottom-actions">
-            <button class="secondary-button" type="button" (click)="cancelEditor()">Annulla</button>
-            <button class="save-button" type="button" (click)="saveGame()">Salva</button>
+            <button
+              class="secondary-button"
+              type="button"
+              [disabled]="catalogBusy()"
+              (click)="cancelEditor()"
+            >
+              Annulla
+            </button>
+            <button
+              class="save-button"
+              type="button"
+              [disabled]="catalogBusy()"
+              (click)="saveGame()"
+            >
+              {{ catalogBusy() ? 'Salvataggio...' : 'Salva' }}
+            </button>
           </div>
         </div>
       </section>
@@ -254,15 +345,24 @@
       </div>
 
       @if (catalogMessage()) {
-        <p class="catalog-message">{{ catalogMessage() }}</p>
+        <p [class]="'catalog-message is-' + catalogMessageTone()">{{ catalogMessage() }}</p>
       }
     </div>
 
     <div class="game-grid">
       @for (game of filteredGames(); track game.id) {
         <article class="game-card">
-          <a [routerLink]="['/giochi', game.id]" class="game-link" [attr.aria-label]="'Apri ' + game.title">
+          <a
+            [routerLink]="['/giochi', game.id]"
+            class="game-link"
+            [attr.aria-label]="'Apri ' + game.title"
+          >
             <div [class]="'game-cover card-cover ' + game.coverTheme">
+              <div
+                class="cover-image-layer"
+                [style.background-image]="coverImageStyle(game)"
+                aria-hidden="true"
+              ></div>
               <span>{{ game.releaseYear }}</span>
             </div>
 
@@ -274,34 +374,63 @@
               </div>
 
               <footer>
-                <span class="status-badge">{{ game.status }}</span>
-                <span class="rating-pill">{{ ratingStars(game) }}</span>
+                <span class="status-badge">{{ game.developer }}</span>
+                <span class="rating-pill">{{ game.modes.join(', ') }}</span>
               </footer>
+
             </div>
           </a>
 
-          <div class="card-actions">
-            @if (deleteCandidateId() === game.id) {
-              <button class="danger-button" type="button" (click)="deleteGame(game)">
-                Conferma
-              </button>
-              <button class="secondary-button compact" type="button" (click)="cancelDelete()">
-                Annulla
-              </button>
-            } @else {
-              <button class="secondary-button compact" type="button" (click)="startEdit(game)">
-                Modifica
-              </button>
-              <button class="danger-ghost-button" type="button" (click)="requestDelete(game)">
-                Elimina
-              </button>
-            }
-          </div>
+          @if (game.sourceUrl) {
+            <a class="source-link" [href]="game.sourceUrl" target="_blank" rel="noreferrer">
+              Fonte {{ game.sourceName || 'RAWG' }}
+            </a>
+          }
+
+          @if (canEditCatalog()) {
+            <div class="card-actions">
+              @if (deleteCandidateId() === game.id) {
+                <button
+                  class="danger-button"
+                  type="button"
+                  [disabled]="catalogBusy()"
+                  (click)="deleteGame(game)"
+                >
+                  {{ catalogBusy() ? 'Elimino...' : 'Conferma' }}
+                </button>
+                <button
+                  class="secondary-button compact"
+                  type="button"
+                  [disabled]="catalogBusy()"
+                  (click)="cancelDelete()"
+                >
+                  Annulla
+                </button>
+              } @else {
+                <button
+                  class="secondary-button compact"
+                  type="button"
+                  [disabled]="catalogBusy()"
+                  (click)="startEdit(game)"
+                >
+                  Modifica
+                </button>
+                <button
+                  class="danger-ghost-button"
+                  type="button"
+                  [disabled]="catalogBusy()"
+                  (click)="requestDelete(game)"
+                >
+                  Elimina
+                </button>
+              }
+            </div>
+          }
         </article>
       } @empty {
         <div class="empty-state">
           <h2>Nessun gioco trovato</h2>
-          <p>Prova a modificare ricerca, genere, piattaforma o stato.</p>
+          <p>Prova a modificare ricerca, genere o piattaforma.</p>
         </div>
       }
     </div>

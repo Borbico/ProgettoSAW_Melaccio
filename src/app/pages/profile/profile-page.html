@@ -3,7 +3,17 @@
     <p class="eyebrow">Profilo</p>
     <h1 id="profile-title">{{ user()?.displayName ?? 'Ospite' }}</h1>
     <p class="handle">{{ user()?.handle ?? '@guest-player' }}</p>
-    <p class="auth-status">{{ authReady() ? (user() ? 'Firebase Auth attivo' : 'Sessione ospite') : 'Connessione in corso' }}</p>
+    <p class="auth-status">
+      {{
+        authReady() ? (user() ? 'Firebase Auth attivo' : 'Sessione ospite') : 'Connessione in corso'
+      }}
+    </p>
+    <p class="role-badge">{{ roleLabel() }}</p>
+    @if (user()) {
+      <p class="uid-line">
+        UID: <span>{{ user()?.id }}</span>
+      </p>
+    }
 
     @if (user()) {
       <button type="button" (click)="signOut()">Esci</button>
@@ -23,71 +33,89 @@
       <span>{{ favoriteGenres().join(', ') }}</span>
       <p>generi ricorrenti</p>
     </article>
+    <article class="permission-card">
+      <span>{{ canEditCatalog() ? 'CRUD' : canEditShelf() ? 'MyShelf' : 'Read only' }}</span>
+      <p>
+        {{
+          canEditCatalog()
+            ? 'catalogo e shelf'
+            : canEditShelf()
+              ? 'dati personali'
+              : 'solo consultazione'
+        }}
+      </p>
+    </article>
   </div>
 
-  <section class="auth-panel" aria-label="Accesso utente">
-    <div>
-      <p class="eyebrow">Accesso</p>
-      <h2>Rientra nella tua shelf</h2>
-      <label class="field">
-        <span>Email</span>
-        <input
-          type="email"
-          autocomplete="email"
-          [ngModel]="signInEmail()"
-          (ngModelChange)="updateSignInEmail($event)"
-        />
-      </label>
-      <label class="field">
-        <span>Password</span>
-        <input
-          type="password"
-          autocomplete="current-password"
-          [ngModel]="signInPassword()"
-          (ngModelChange)="updateSignInPassword($event)"
-        />
-      </label>
-      <button type="button" (click)="signIn()">Accedi</button>
-    </div>
+  @if (authReady() && !user()) {
+    <section class="auth-panel" aria-label="Accesso utente">
+      <div id="accesso">
+        <p class="eyebrow">Accesso</p>
+        <h2>Rientra nella tua shelf</h2>
+        <label class="field">
+          <span>Email</span>
+          <input
+            type="email"
+            autocomplete="email"
+            [ngModel]="signInEmail()"
+            (ngModelChange)="updateSignInEmail($event)"
+          />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input
+            type="password"
+            autocomplete="current-password"
+            [ngModel]="signInPassword()"
+            (ngModelChange)="updateSignInPassword($event)"
+          />
+        </label>
+        <button type="button" [disabled]="authBusy()" (click)="signIn()">
+          {{ signInBusy() ? 'Accesso...' : 'Accedi' }}
+        </button>
+      </div>
 
-    <div>
-      <p class="eyebrow">Nuovo profilo</p>
-      <h2>Crea una shelf</h2>
-      <label class="field">
-        <span>Nome</span>
-        <input
-          type="text"
-          autocomplete="name"
-          placeholder="Nome giocatore"
-          [ngModel]="registerName()"
-          (ngModelChange)="updateRegisterName($event)"
-        />
-      </label>
-      <label class="field">
-        <span>Email</span>
-        <input
-          type="email"
-          autocomplete="email"
-          placeholder="email@example.com"
-          [ngModel]="registerEmail()"
-          (ngModelChange)="updateRegisterEmail($event)"
-        />
-      </label>
-      <label class="field">
-        <span>Password</span>
-        <input
-          type="password"
-          autocomplete="new-password"
-          placeholder="Almeno 6 caratteri"
-          [ngModel]="registerPassword()"
-          (ngModelChange)="updateRegisterPassword($event)"
-        />
-      </label>
-      <button type="button" (click)="register()">Registra</button>
-    </div>
+      <div id="registrati">
+        <p class="eyebrow">Nuovo profilo</p>
+        <h2>Crea una shelf</h2>
+        <label class="field">
+          <span>Nome</span>
+          <input
+            type="text"
+            autocomplete="name"
+            placeholder="Nome giocatore"
+            [ngModel]="registerName()"
+            (ngModelChange)="updateRegisterName($event)"
+          />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input
+            type="email"
+            autocomplete="email"
+            placeholder="email@example.com"
+            [ngModel]="registerEmail()"
+            (ngModelChange)="updateRegisterEmail($event)"
+          />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input
+            type="password"
+            autocomplete="new-password"
+            placeholder="Almeno 6 caratteri"
+            [ngModel]="registerPassword()"
+            (ngModelChange)="updateRegisterPassword($event)"
+          />
+        </label>
+        <button type="button" [disabled]="authBusy()" (click)="register()">
+          {{ registerBusy() ? 'Creazione...' : 'Registra' }}
+        </button>
+      </div>
 
-    @if (authMessage()) {
-      <p class="auth-message">{{ authMessage() }}</p>
-    }
-  </section>
+      @if (authMessage()) {
+        <p [class]="'auth-message is-' + authMessageTone()">{{ authMessage() }}</p>
+      }
+    </section>
+  }
 </section>

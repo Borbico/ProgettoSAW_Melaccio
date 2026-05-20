@@ -18,4 +18,7 @@ export interface Game {
   notes: string;
   personalGoal: string;
   coverTheme: string;
+  coverImageUrl?: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }

@@ -3,33 +3,40 @@ import { Unsubscribe } from 'firebase/firestore';
 import { CatalogGame, toCatalogGame, toShelfEntry } from '../models/catalog-game';
 import { Game, GameStatus } from '../models/game';
 import { ShelfEntry } from '../models/shelf-entry';
+import { AccessControl } from './access-control';
 import { AuthSession } from './auth-session';
 import { CatalogStorage } from './catalog-storage';
 import { ShelfStorage } from './shelf-storage';
 
+export type PersistenceResult = 'firebase' | 'local' | 'fallback' | 'denied';
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GameCatalog {
+  private readonly access = inject(AccessControl);
   private readonly auth = inject(AuthSession);
   private readonly catalogStorage = inject(CatalogStorage);
   private readonly shelfStorage = inject(ShelfStorage);
   private readonly guestUserId = 'guest';
   private readonly catalogGamesState = signal<CatalogGame[]>([]);
   private readonly shelfEntriesState = signal<Record<string, ShelfEntry>>({});
-  private readonly gamesState = signal<Game[]>([]);
+  private readonly shelfGamesState = signal<Game[]>([]);
 
-  readonly games = this.gamesState.asReadonly();
+  readonly catalogGames = this.catalogGamesState.asReadonly();
+  readonly shelfGames = this.shelfGamesState.asReadonly();
+  readonly games = this.catalogGames;
 
   constructor() {
+    const unsubscribeCatalog: Unsubscribe = this.catalogStorage.watch((catalogGames) => {
+      untracked(() => {
+        this.catalogGamesState.set(catalogGames);
+        this.syncGames();
+      });
+    });
+
     effect((onCleanup) => {
       const userId = this.auth.currentUser()?.id ?? this.guestUserId;
-      const unsubscribeCatalog: Unsubscribe = this.catalogStorage.watch(userId, (catalogGames) => {
-        untracked(() => {
-          this.catalogGamesState.set(catalogGames);
-          this.syncGames();
-        });
-      });
       const unsubscribe: Unsubscribe = this.shelfStorage.watch(userId, (entries) => {
         untracked(() => {
           this.shelfEntriesState.set(entries);
@@ -38,50 +45,64 @@ export class GameCatalog {
       });
 
       onCleanup(() => {
-        unsubscribeCatalog();
         unsubscribe();
       });
     });
+
+    effect((onCleanup) => {
+      onCleanup(() => unsubscribeCatalog());
+    });
   }
 
-  findById(id: string): Game | undefined {
-    return this.games().find((game) => game.id === id);
+  findById(id: string): CatalogGame | undefined {
+    return this.findCatalogById(id);
   }
 
-  createGame(game: Game): string {
+  findCatalogById(id: string): CatalogGame | undefined {
+    return this.catalogGames().find((game) => game.id === id);
+  }
+
+  findShelfById(id: string): Game | undefined {
+    return this.shelfGames().find((game) => game.id === id);
+  }
+
+  async createGame(game: CatalogGame): Promise<{ id: string; persistence: PersistenceResult }> {
+    if (!this.access.canEditCatalog()) {
+      return { id: '', persistence: 'denied' };
+    }
+
     const id = this.uniqueGameId(game.title);
     const nextGame = { ...game, id };
 
     this.catalogGamesState.update((games) => [...games, toCatalogGame(nextGame)]);
-    this.shelfEntriesState.update((entries) => ({
-      ...entries,
-      [id]: toShelfEntry(nextGame)
-    }));
     this.syncGames();
-    this.persistCatalog();
-    this.persistCurrentShelf();
+    const persistence = await this.persistCatalog();
 
-    return id;
+    return { id, persistence };
   }
 
-  updateGame(gameId: string, game: Game): void {
+  async updateGame(gameId: string, game: CatalogGame): Promise<PersistenceResult> {
+    if (!this.access.canEditCatalog()) {
+      return 'denied';
+    }
+
     const nextGame = { ...game, id: gameId };
 
     this.catalogGamesState.update((games) =>
       games.map((catalogGame) =>
-        catalogGame.id === gameId ? toCatalogGame(nextGame) : catalogGame
-      )
+        catalogGame.id === gameId ? toCatalogGame(nextGame) : catalogGame,
+      ),
     );
-    this.shelfEntriesState.update((entries) => ({
-      ...entries,
-      [gameId]: toShelfEntry(nextGame)
-    }));
     this.syncGames();
-    this.persistCatalog();
-    this.persistCurrentShelf();
+
+    return this.persistCatalog();
   }
 
-  deleteGame(gameId: string): void {
+  async deleteGame(gameId: string): Promise<PersistenceResult> {
+    if (!this.access.canEditCatalog()) {
+      return 'denied';
+    }
+
     this.catalogGamesState.update((games) => games.filter((game) => game.id !== gameId));
     this.shelfEntriesState.update((entries) => {
       const { [gameId]: _deletedEntry, ...remainingEntries } = entries;
@@ -89,57 +110,88 @@ export class GameCatalog {
       return remainingEntries;
     });
     this.syncGames();
-    this.persistCatalog();
-    this.persistCurrentShelf();
+
+    const [catalogPersistence, shelfPersistence] = await Promise.all([
+      this.persistCatalog(),
+      this.persistCurrentShelf(),
+    ]);
+
+    if (catalogPersistence === 'fallback' || shelfPersistence === 'fallback') {
+      return 'fallback';
+    }
+
+    if (catalogPersistence === 'firebase' && shelfPersistence === 'firebase') {
+      return 'firebase';
+    }
+
+    return catalogPersistence;
   }
 
-  updateStatus(gameId: string, status: GameStatus): void {
-    this.updateShelfEntry(gameId, { status });
+  updateStatus(gameId: string, status: GameStatus): Promise<PersistenceResult> {
+    return this.updateShelfEntry(gameId, { status });
   }
 
-  updateShelfEntry(gameId: string, entry: Partial<ShelfEntry>): void {
-    const game = this.findById(gameId);
+  updateShelfEntry(gameId: string, entry: Partial<ShelfEntry>): Promise<PersistenceResult> {
+    if (!this.access.canEditShelf()) {
+      return Promise.resolve('denied');
+    }
 
-    if (!game) {
-      return;
+    if (!this.findCatalogById(gameId)) {
+      return Promise.resolve('local');
     }
 
     this.shelfEntriesState.update((entries) => ({
       ...entries,
       [gameId]: {
         ...this.defaultShelfEntry(),
-        ...(entries[gameId] ?? toShelfEntry(game)),
-        ...entry
-      }
+        ...(entries[gameId] ?? {}),
+        ...entry,
+      },
     }));
     this.syncGames();
-    this.persistCurrentShelf();
+
+    return this.persistCurrentShelf();
   }
 
   private syncGames(): void {
-    this.gamesState.set(this.composeGames(this.catalogGamesState(), this.shelfEntriesState()));
+    this.shelfGamesState.set(
+      this.composeShelfGames(this.catalogGamesState(), this.shelfEntriesState()),
+    );
   }
 
-  private composeGames(catalogGames: CatalogGame[], entries: Record<string, ShelfEntry>): Game[] {
+  private composeShelfGames(
+    catalogGames: CatalogGame[],
+    entries: Record<string, ShelfEntry>,
+  ): Game[] {
     return catalogGames.map((game) => ({
       ...game,
-      ...(entries[game.id] ?? this.defaultShelfEntry())
+      ...(entries[game.id] ?? this.defaultShelfEntry()),
     }));
   }
 
-  private persistCatalog(): void {
-    const userId = this.auth.currentUser()?.id ?? this.guestUserId;
+  private async persistCatalog(): Promise<PersistenceResult> {
+    try {
+      await this.catalogStorage.write(this.catalogGamesState());
 
-    void this.catalogStorage.write(userId, this.catalogGamesState()).catch(() => undefined);
+      return 'firebase';
+    } catch {
+      return 'fallback';
+    }
   }
 
-  private persistCurrentShelf(): void {
+  private async persistCurrentShelf(): Promise<PersistenceResult> {
     const userId = this.auth.currentUser()?.id ?? this.guestUserId;
     const entries = Object.fromEntries(
-      this.games().map((game) => [game.id, toShelfEntry(game)])
+      this.shelfGames().map((game) => [game.id, toShelfEntry(game)]),
     );
 
-    void this.shelfStorage.write(userId, entries).catch(() => undefined);
+    try {
+      await this.shelfStorage.write(userId, entries);
+
+      return userId === this.guestUserId ? 'local' : 'firebase';
+    } catch {
+      return 'fallback';
+    }
   }
 
   private defaultShelfEntry(): ShelfEntry {
@@ -149,7 +201,7 @@ export class GameCatalog {
       hoursPlayed: 0,
       progress: 0,
       notes: '',
-      personalGoal: ''
+      personalGoal: '',
     };
   }
 

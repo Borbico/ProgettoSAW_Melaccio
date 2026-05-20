@@ -55,6 +55,7 @@ p {
 .game-cover::before {
   inset: 0;
   background: var(--cover-bg);
+  transition: opacity 180ms ease;
 }
 
 .game-cover::after {
@@ -72,6 +73,23 @@ p {
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(12px);
+}
+
+.cover-image-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  opacity: 0;
+}
+
+.cover-image-layer[style*="url"] {
+  opacity: 1;
+}
+
+.game-cover:has(.cover-image-layer[style*="url"])::before {
+  opacity: 0;
 }
 
 .cover-moon {

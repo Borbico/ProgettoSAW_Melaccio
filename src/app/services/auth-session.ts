@@ -5,18 +5,19 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile,
 } from 'firebase/auth';
 import { UserProfile } from '../models/user-profile';
 import { FirebaseClient } from './firebase-client';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthSession {
   private readonly firebase = inject(FirebaseClient);
   private readonly currentUserState = signal<UserProfile | null>(null);
   private readonly authReadyState = signal(false);
+  private readonly readyResolvers: Array<() => void> = [];
 
   readonly currentUser = this.currentUserState.asReadonly();
   readonly authReady = this.authReadyState.asReadonly();
@@ -27,6 +28,17 @@ export class AuthSession {
     onAuthStateChanged(this.firebase.auth, (user) => {
       this.currentUserState.set(user ? this.toUserProfile(user) : null);
       this.authReadyState.set(true);
+      this.resolveReady();
+    });
+  }
+
+  whenReady(): Promise<void> {
+    if (this.authReadyState()) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      this.readyResolvers.push(resolve);
     });
   }
 
@@ -38,7 +50,7 @@ export class AuthSession {
     const credential = await createUserWithEmailAndPassword(
       this.firebase.auth,
       email.trim().toLowerCase(),
-      password
+      password,
     );
     const cleanDisplayName = displayName.trim() || this.displayNameFromEmail(email);
 
@@ -59,7 +71,7 @@ export class AuthSession {
       displayName,
       email,
       handle: `@${this.handleFromEmail(email)}`,
-      createdAt: user.metadata.creationTime ?? new Date().toISOString()
+      createdAt: user.metadata.creationTime ?? new Date().toISOString(),
     };
   }
 
@@ -76,5 +88,11 @@ export class AuthSession {
 
   private handleFromEmail(email: string): string {
     return (email.split('@')[0] || 'player').replace(/[^a-z0-9-]/g, '-');
+  }
+
+  private resolveReady(): void {
+    while (this.readyResolvers.length) {
+      this.readyResolvers.shift()?.();
+    }
   }
 }

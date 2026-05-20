@@ -41,7 +41,8 @@ h1 {
   font-weight: 800;
 }
 
-.auth-status {
+.auth-status,
+.role-badge {
   width: fit-content;
   margin-top: 14px;
   padding: 8px 10px;
@@ -50,6 +51,25 @@ h1 {
   background: rgba(244, 185, 66, 0.92);
   font-size: 0.82rem;
   font-weight: 900;
+}
+
+.role-badge {
+  margin-top: 8px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.uid-line {
+  max-width: 100%;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.uid-line span {
+  font-weight: 800;
 }
 
 .profile-card button,
@@ -77,7 +97,7 @@ h1 {
   padding: 24px;
 }
 
-.profile-grid article:last-child {
+.profile-grid article:nth-child(3) {
   grid-column: 1 / -1;
   background: #151515;
   color: #ffffff;
@@ -96,8 +116,19 @@ h1 {
   font-weight: 800;
 }
 
-.profile-grid article:last-child p {
+.profile-grid article:nth-child(3) p {
   color: rgba(255, 255, 255, 0.72);
+}
+
+.permission-card {
+  grid-column: 1 / -1;
+  min-height: 140px;
+  color: #ffffff;
+  background: #267a71;
+}
+
+.permission-card p {
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .auth-panel {
@@ -126,6 +157,11 @@ h1 {
   margin-top: 4px;
   color: #ffffff;
   background: #151515;
+}
+
+.auth-panel button:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .field {
@@ -162,6 +198,26 @@ h1 {
   color: #151515;
   background: #fff0df;
   font-weight: 800;
+}
+
+.auth-message.is-success {
+  color: #ffffff;
+  background: #267a71;
+}
+
+.auth-message.is-info {
+  color: #ffffff;
+  background: #151515;
+}
+
+.auth-message.is-warning {
+  color: #5a3a00;
+  background: #fff0bc;
+}
+
+.auth-message.is-error {
+  color: #ffffff;
+  background: #b4452c;
 }
 
 @media (max-width: 760px) {

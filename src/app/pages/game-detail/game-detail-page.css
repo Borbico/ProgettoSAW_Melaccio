@@ -76,6 +76,12 @@ h2 {
   background: #e7f2ef;
 }
 
+.source-link {
+  width: fit-content;
+  color: #267a71;
+  font-weight: 900;
+}
+
 .action-row button {
   border: 1px solid rgba(21, 21, 21, 0.14);
   color: #444444;
@@ -87,6 +93,11 @@ h2 {
   border-color: #151515;
   color: #ffffff;
   background: #151515;
+}
+
+.action-row button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .action-row button.has-unsaved-change {
@@ -180,6 +191,45 @@ h2 {
 .save-message.is-pending {
   color: #5a3a00;
   background: #fff0bc;
+}
+
+.save-message.is-success {
+  color: #ffffff;
+  background: #267a71;
+}
+
+.save-message.is-info {
+  color: #ffffff;
+  background: #151515;
+}
+
+.save-message.is-warning {
+  color: #5a3a00;
+  background: #fff0bc;
+}
+
+.save-message.is-error {
+  color: #ffffff;
+  background: #b4452c;
+}
+
+.readonly-notice {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(244, 185, 66, 0.42);
+  border-radius: 8px;
+  color: #5a3a00;
+  background: #fff8dd;
+}
+
+.readonly-notice strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.readonly-notice p {
+  color: #6d5a2a;
+  line-height: 1.5;
 }
 
 .editor-grid {

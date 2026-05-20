@@ -44,6 +44,13 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
+## RAWG import
+
+Gli utenti admin possono usare l'integrazione RAWG dal form di creazione/modifica del catalogo.
+La API key RAWG non viene salvata nel repository: si inserisce dal pannello admin e resta nel
+localStorage del browser. Dopo la ricerca, i dati importati compilano la scheda del gioco, ma il
+catalogo viene aggiornato solo premendo il pulsante `Salva`.
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:

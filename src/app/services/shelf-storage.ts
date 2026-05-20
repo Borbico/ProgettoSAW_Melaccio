@@ -21,7 +21,7 @@ export class ShelfStorage {
 
   watch(userId: string, onEntries: (entries: Record<string, ShelfEntry>) => void): Unsubscribe {
     if (userId === this.guestUserId) {
-      onEntries(this.readLocal(userId));
+      onEntries(this.defaultEntries());
       return () => undefined;
     }
 
@@ -47,11 +47,11 @@ export class ShelfStorage {
   }
 
   async write(userId: string, entries: Record<string, ShelfEntry>): Promise<void> {
-    this.writeLocal(userId, entries);
-
     if (userId === this.guestUserId) {
       return;
     }
+
+    this.writeLocal(userId, entries);
 
     await setDoc(
       this.shelfDocument(userId),

@@ -16,11 +16,14 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render app name', async () => {
+  it('should render guest navigation without MyShelf', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+
     expect(compiled.textContent).toContain('GameShelf');
-    expect(compiled.textContent).toContain('MyShelf');
+    expect(compiled.textContent).toContain('Catalogo');
+    expect(compiled.textContent).toContain('Profilo');
+    expect(compiled.textContent).not.toContain('MyShelf');
   });
 });

@@ -43,6 +43,11 @@
           <article class="shelf-card">
             <a [routerLink]="['/giochi', game.id]" [attr.aria-label]="'Apri ' + game.title">
               <div [class]="'game-cover mini-cover ' + game.coverTheme">
+                <div
+                  class="cover-image-layer"
+                  [style.background-image]="coverImageStyle(game)"
+                  aria-hidden="true"
+                ></div>
                 <span>{{ game.progress }}%</span>
               </div>
               <div class="shelf-card-body">
@@ -54,14 +59,16 @@
               </div>
             </a>
 
-            <div class="quick-actions" aria-label="Azioni rapide">
-              @if (game.status !== 'In corso') {
-                <button type="button" (click)="setStatus(game, 'In corso')">Avvia</button>
-              }
-              @if (game.status !== 'Completato') {
-                <button type="button" (click)="setStatus(game, 'Completato')">Completa</button>
-              }
-            </div>
+            @if (canEditShelf()) {
+              <div class="quick-actions" aria-label="Azioni rapide">
+                @if (game.status !== 'In corso') {
+                  <button type="button" (click)="setStatus(game, 'In corso')">Avvia</button>
+                }
+                @if (game.status !== 'Completato') {
+                  <button type="button" (click)="setStatus(game, 'Completato')">Completa</button>
+                }
+              </div>
+            }
           </article>
         } @empty {
           <div class="lane-empty">Nessun gioco in questa sezione.</div>

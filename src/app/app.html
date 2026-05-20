@@ -9,10 +9,43 @@
       <a routerLink="/catalogo" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
         Catalogo
       </a>
-      <a routerLink="/myshelf" routerLinkActive="is-active">MyShelf</a>
+      @if (canEditShelf()) {
+        <a routerLink="/myshelf" routerLinkActive="is-active">MyShelf</a>
+      }
       <a routerLink="/profilo" routerLinkActive="is-active">Profilo</a>
     </nav>
+
+    <div class="account-actions" aria-label="Azioni account">
+      @if (authReady()) {
+        @if (user()) {
+          <button type="button" class="account-button" (click)="quickSignOut()">Esci</button>
+        } @else {
+          <a class="account-link" routerLink="/profilo" fragment="accesso">Accedi</a>
+          <a class="account-button" routerLink="/profilo" fragment="registrati">Registrati</a>
+        }
+      } @else {
+        <span class="account-loading">Connessione</span>
+      }
+    </div>
   </header>
 
   <router-outlet />
+
+  <section class="toast-stack" aria-label="Notifiche" aria-live="polite">
+    @for (notification of notifications(); track notification.id) {
+      <article [class]="'toast is-' + notification.tone">
+        <div>
+          <strong>{{ notification.title }}</strong>
+          <p>{{ notification.message }}</p>
+        </div>
+        <button
+          type="button"
+          aria-label="Chiudi notifica"
+          (click)="dismissNotification(notification.id)"
+        >
+          &times;
+        </button>
+      </article>
+    }
+  </section>
 </main>

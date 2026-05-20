@@ -3,8 +3,29 @@ import { ShelfEntry } from './shelf-entry';
 
 export type CatalogGame = Omit<Game, keyof ShelfEntry>;
 
-export function toCatalogGame(game: Game): CatalogGame {
-  const { status, rating, hoursPlayed, progress, notes, personalGoal, ...catalogGame } = game;
+export function toCatalogGame(game: Game | CatalogGame): CatalogGame {
+  const catalogGame: CatalogGame = {
+    id: game.id,
+    title: game.title,
+    developer: game.developer,
+    publisher: game.publisher,
+    genre: game.genre,
+    platform: game.platform,
+    modes: game.modes,
+    tags: game.tags,
+    releaseYear: game.releaseYear,
+    description: game.description,
+    coverTheme: game.coverTheme,
+  };
+
+  if (game.coverImageUrl) {
+    catalogGame.coverImageUrl = game.coverImageUrl;
+  }
+
+  if (game.sourceName && game.sourceUrl) {
+    catalogGame.sourceName = game.sourceName;
+    catalogGame.sourceUrl = game.sourceUrl;
+  }
 
   return catalogGame;
 }
@@ -16,6 +37,6 @@ export function toShelfEntry(game: Game): ShelfEntry {
     hoursPlayed: game.hoursPlayed,
     progress: game.progress,
     notes: game.notes,
-    personalGoal: game.personalGoal
+    personalGoal: game.personalGoal,
   };
 }

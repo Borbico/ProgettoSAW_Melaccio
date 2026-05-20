@@ -3,6 +3,11 @@
 
   <section class="detail-hero">
     <div [class]="'game-cover detail-cover ' + selectedGame.coverTheme">
+      <div
+        class="cover-image-layer"
+        [style.background-image]="coverImageStyle(selectedGame)"
+        aria-hidden="true"
+      ></div>
       <span>{{ selectedGame.releaseYear }}</span>
     </div>
 
@@ -17,10 +22,17 @@
         <span>{{ selectedGame.modes.join(', ') }}</span>
       </div>
 
+      @if (selectedGame.sourceUrl) {
+        <a class="source-link" [href]="selectedGame.sourceUrl" target="_blank" rel="noreferrer">
+          Fonte {{ selectedGame.sourceName || 'RAWG' }}
+        </a>
+      }
+
       <div class="action-row" aria-label="Cambia stato">
         @for (status of statuses; track status) {
           <button
             type="button"
+            [disabled]="!canEditShelf() || savingShelf()"
             [class.is-active]="draftStatus() === status"
             [class.has-unsaved-change]="draftDirty() && draftStatus() === status"
             (click)="setDraftStatus(status)"
@@ -32,26 +44,23 @@
     </div>
   </section>
 
-  <section class="detail-grid" aria-label="Scheda personale">
+  <section class="detail-grid" aria-label="Scheda catalogo">
     <article class="info-panel progress-panel">
-      <p class="eyebrow">Progressi</p>
-      <h2>{{ selectedGame.progress }}%</h2>
-      <div class="progress-track" aria-hidden="true">
-        <span [style.width.%]="selectedGame.progress"></span>
-      </div>
-      <p>{{ selectedGame.personalGoal }}</p>
+      <p class="eyebrow">Anno di uscita</p>
+      <h2>{{ selectedGame.releaseYear }}</h2>
+      <p>{{ selectedGame.genre }} disponibile su {{ selectedGame.platform }}.</p>
     </article>
 
     <article class="info-panel">
-      <p class="eyebrow">Tempo e voto</p>
-      <h2>{{ selectedGame.hoursPlayed }} ore</h2>
-      <p class="rating-line">{{ ratingStars(selectedGame) }}</p>
+      <p class="eyebrow">Sviluppo</p>
+      <h2>{{ selectedGame.developer }}</h2>
+      <p>{{ selectedGame.publisher }}</p>
     </article>
 
     <article class="info-panel">
-      <p class="eyebrow">Note</p>
-      <h2>Osservazioni</h2>
-      <p>{{ selectedGame.notes }}</p>
+      <p class="eyebrow">Modalita</p>
+      <h2>{{ selectedGame.modes.join(', ') }}</h2>
+      <p>I progressi e le valutazioni sono personali e restano nella tua MyShelf.</p>
     </article>
 
     <article class="info-panel tag-panel">
@@ -67,22 +76,32 @@
   <section class="editor-panel" aria-labelledby="editor-title">
     <div class="editor-heading">
       <div>
-        <p class="eyebrow">MyShelf editor</p>
+        <p class="eyebrow">MyShelf editor &middot; {{ roleLabel() }}</p>
         <h2 id="editor-title">Modifica i tuoi dati personali</h2>
       </div>
 
       @if (draftDirty()) {
         <p class="save-message is-pending">Modifiche non salvate</p>
       } @else if (saveMessage()) {
-        <p class="save-message">{{ saveMessage() }}</p>
+        <p [class]="'save-message is-' + saveMessageTone()">{{ saveMessage() }}</p>
       }
     </div>
+
+    @if (!canEditShelf()) {
+      <div class="readonly-notice">
+        <strong>Accesso richiesto</strong>
+        <p>
+          Gli ospiti possono consultare il catalogo, ma devono accedere per salvare dati personali.
+        </p>
+      </div>
+    }
 
     <div class="editor-grid">
       <label class="field">
         <span>Stato</span>
         <select
           [ngModel]="draftStatus()"
+          [disabled]="!canEditShelf() || savingShelf()"
           (ngModelChange)="setDraftStatus($event)"
         >
           @for (status of statuses; track status) {
@@ -98,6 +117,7 @@
           min="0"
           max="999"
           [ngModel]="draftHoursPlayed()"
+          [disabled]="!canEditShelf() || savingShelf()"
           (ngModelChange)="updateDraftHours($event)"
         />
       </label>
@@ -106,6 +126,7 @@
         <span>Voto personale</span>
         <select
           [ngModel]="draftRating()"
+          [disabled]="!canEditShelf() || savingShelf()"
           (ngModelChange)="updateDraftRating($event)"
         >
           <option [value]="0">Da valutare</option>
@@ -125,6 +146,7 @@
           max="100"
           step="1"
           [ngModel]="draftProgress()"
+          [disabled]="!canEditShelf() || savingShelf()"
           (ngModelChange)="updateDraftProgress($event)"
         />
       </label>
@@ -134,6 +156,7 @@
         <input
           type="text"
           [ngModel]="draftPersonalGoal()"
+          [disabled]="!canEditShelf() || savingShelf()"
           (ngModelChange)="updateDraftPersonalGoal($event)"
         />
       </label>
@@ -143,6 +166,7 @@
         <textarea
           rows="5"
           [ngModel]="draftNotes()"
+          [disabled]="!canEditShelf() || savingShelf()"
           (ngModelChange)="updateDraftNotes($event)"
         ></textarea>
       </label>
@@ -150,14 +174,17 @@
       <div class="draft-summary" aria-label="Anteprima modifiche">
         <p class="eyebrow">Anteprima bozza</p>
         <strong>{{ draftStatus() }}</strong>
-        <span>{{ draftHoursPlayed() }} ore &middot; {{ draftProgress() }}% &middot; {{ draftRatingStars() }}</span>
+        <span
+          >{{ draftHoursPlayed() }} ore &middot; {{ draftProgress() }}% &middot;
+          {{ draftRatingStars() }}</span
+        >
       </div>
 
       <div class="editor-actions">
         <button
           type="button"
           class="secondary-button"
-          [disabled]="!draftDirty()"
+          [disabled]="!draftDirty() || !canEditShelf() || savingShelf()"
           (click)="resetDraft(selectedGame)"
         >
           Annulla
@@ -165,10 +192,10 @@
         <button
           type="button"
           class="save-button"
-          [disabled]="!draftDirty()"
+          [disabled]="!draftDirty() || !canEditShelf() || savingShelf()"
           (click)="saveShelfEntry(selectedGame)"
         >
-          Salva modifiche
+          {{ savingShelf() ? 'Salvataggio...' : 'Salva modifiche' }}
         </button>
       </div>
     </div>

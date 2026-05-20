@@ -5,67 +5,51 @@ import {
   doc,
   onSnapshot,
   serverTimestamp,
-  setDoc
+  setDoc,
 } from 'firebase/firestore';
 import { MOCK_GAMES } from '../data/mock-games';
 import { CatalogGame, toCatalogGame } from '../models/catalog-game';
 import { FirebaseClient } from './firebase-client';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CatalogStorage {
   private readonly firebase = inject(FirebaseClient);
-  private readonly guestUserId = 'guest';
   private readonly keyPrefix = 'gameshelf:catalog';
 
-  watch(userId: string, onGames: (games: CatalogGame[]) => void): Unsubscribe {
-    if (userId === this.guestUserId) {
-      onGames(this.readLocal(userId));
-      return () => undefined;
-    }
-
-    const catalogRef = this.catalogDocument(userId);
+  watch(onGames: (games: CatalogGame[]) => void): Unsubscribe {
+    const catalogRef = this.catalogDocument();
 
     return onSnapshot(
       catalogRef,
       (snapshot) => {
-        const games = snapshot.exists()
-          ? this.normalizeGames(snapshot.data())
-          : this.readLocal(userId);
+        const games = snapshot.exists() ? this.normalizeGames(snapshot.data()) : this.readLocal();
 
         onGames(games);
-
-        if (!snapshot.exists()) {
-          void this.write(userId, games).catch(() => undefined);
-        }
       },
       () => {
-        onGames(this.readLocal(userId));
-      }
+        onGames(this.readLocal());
+      },
     );
   }
 
-  async write(userId: string, games: CatalogGame[]): Promise<void> {
+  async write(games: CatalogGame[]): Promise<void> {
     const normalizedGames = this.normalizeList(games);
-    this.writeLocal(userId, normalizedGames);
-
-    if (userId === this.guestUserId) {
-      return;
-    }
+    this.writeLocal(normalizedGames);
 
     await setDoc(
-      this.catalogDocument(userId),
+      this.catalogDocument(),
       {
         games: normalizedGames,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
   }
 
-  private catalogDocument(userId: string) {
-    return doc(this.firebase.db, 'users', userId, 'catalog', 'default');
+  private catalogDocument() {
+    return doc(this.firebase.db, 'catalog', 'default');
   }
 
   private normalizeGames(data: DocumentData): CatalogGame[] {
@@ -78,15 +62,15 @@ export class CatalogStorage {
     return this.normalizeList(rawGames as Partial<CatalogGame>[]);
   }
 
-  private readLocal(userId: string): CatalogGame[] {
-    const storedGames = this.readJson<CatalogGame[]>(this.storageKey(userId));
+  private readLocal(): CatalogGame[] {
+    const storedGames = this.readJson<CatalogGame[]>(this.storageKey());
 
     return storedGames ? this.normalizeList(storedGames) : this.defaultGames();
   }
 
-  private writeLocal(userId: string, games: CatalogGame[]): void {
+  private writeLocal(games: CatalogGame[]): void {
     if (this.hasStorage()) {
-      localStorage.setItem(this.storageKey(userId), JSON.stringify(games));
+      localStorage.setItem(this.storageKey(), JSON.stringify(games));
     }
   }
 
@@ -105,7 +89,7 @@ export class CatalogStorage {
       return null;
     }
 
-    return {
+    const normalizedGame: CatalogGame = {
       id: String(game.id),
       title: String(game.title),
       developer: String(game.developer ?? 'Sviluppatore non indicato'),
@@ -116,8 +100,23 @@ export class CatalogStorage {
       tags: this.normalizeStringList(game.tags),
       releaseYear: this.clampNumber(game.releaseYear, 1970, 2035),
       description: String(game.description ?? ''),
-      coverTheme: String(game.coverTheme ?? 'cover-neon')
+      coverTheme: String(game.coverTheme ?? 'cover-neon'),
     };
+
+    const coverImageUrl = this.normalizeUrl(game.coverImageUrl);
+    const sourceUrl = this.normalizeUrl(game.sourceUrl);
+    const sourceName = String(game.sourceName ?? '').trim();
+
+    if (coverImageUrl) {
+      normalizedGame.coverImageUrl = coverImageUrl;
+    }
+
+    if (sourceUrl && sourceName) {
+      normalizedGame.sourceName = sourceName;
+      normalizedGame.sourceUrl = sourceUrl;
+    }
+
+    return normalizedGame;
   }
 
   private normalizeStringList(value: unknown): string[] {
@@ -138,8 +137,14 @@ export class CatalogStorage {
     return Math.min(max, Math.max(min, Math.round(numericValue)));
   }
 
-  private storageKey(userId: string): string {
-    return `${this.keyPrefix}:${userId}`;
+  private normalizeUrl(value: unknown): string {
+    const url = String(value ?? '').trim();
+
+    return url.startsWith('https://') ? url : '';
+  }
+
+  private storageKey(): string {
+    return `${this.keyPrefix}:global`;
   }
 
   private readJson<T>(key: string): T | null {
