@@ -29,6 +29,10 @@ class FakeShelfStorage {
   lastWrittenEntries: Record<string, ShelfEntry> = {};
   private entries = Object.fromEntries(MOCK_GAMES.map((game) => [game.id, toShelfEntry(game)]));
 
+  setEntries(entries: Record<string, ShelfEntry>): void {
+    this.entries = entries;
+  }
+
   watch(_userId: string, onEntries: (entries: Record<string, ShelfEntry>) => void) {
     onEntries(this.entries);
     return () => undefined;
@@ -86,6 +90,38 @@ describe('GameCatalog', () => {
     expect(catalog.findShelfById(id)?.status).toBe('Wishlist');
     expect(catalogStorage.lastWrittenGames.some((savedGame) => savedGame.id === id)).toBe(true);
     expect(shelfStorage.lastWrittenEntries[id]).toBeUndefined();
+  });
+
+  it('composes neutral shelf defaults when a user has no saved entries', () => {
+    shelfStorage.setEntries({});
+    TestBed.resetTestingModule();
+
+    const currentUser = signal({ id: 'new-user' });
+
+    TestBed.configureTestingModule({
+      providers: [
+        GameCatalog,
+        {
+          provide: AccessControl,
+          useValue: {
+            canEditCatalog: canEditCatalog.asReadonly(),
+            canEditShelf: canEditShelf.asReadonly(),
+          },
+        },
+        { provide: AuthSession, useValue: { currentUser: currentUser.asReadonly() } },
+        { provide: CatalogStorage, useValue: catalogStorage },
+        { provide: ShelfStorage, useValue: shelfStorage },
+      ],
+    });
+
+    const freshCatalog = TestBed.inject(GameCatalog);
+    TestBed.flushEffects();
+    const hades = freshCatalog.findShelfById('hades');
+
+    expect(hades?.status).toBe('Wishlist');
+    expect(hades?.rating).toBe(0);
+    expect(hades?.hoursPlayed).toBe(0);
+    expect(hades?.progress).toBe(0);
   });
 
   it('updates public catalog fields without overwriting personal shelf stats', async () => {

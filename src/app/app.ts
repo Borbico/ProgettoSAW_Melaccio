@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AccessControl } from './services/access-control';
 import { AuthSession } from './services/auth-session';
 import { NotificationCenter } from './services/notification-center';
+import { PwaService } from './services/pwa';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ export class App {
   private readonly access = inject(AccessControl);
   private readonly auth = inject(AuthSession);
   private readonly notificationCenter = inject(NotificationCenter);
+  private readonly pwa = inject(PwaService);
   private readonly router = inject(Router);
 
   protected readonly appName = 'GameShelf';

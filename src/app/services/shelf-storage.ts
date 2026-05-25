@@ -5,14 +5,13 @@ import {
   doc,
   onSnapshot,
   serverTimestamp,
-  setDoc
+  setDoc,
 } from 'firebase/firestore';
-import { MOCK_GAMES } from '../data/mock-games';
 import { ShelfEntry } from '../models/shelf-entry';
 import { FirebaseClient } from './firebase-client';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ShelfStorage {
   private readonly firebase = inject(FirebaseClient);
@@ -21,7 +20,7 @@ export class ShelfStorage {
 
   watch(userId: string, onEntries: (entries: Record<string, ShelfEntry>) => void): Unsubscribe {
     if (userId === this.guestUserId) {
-      onEntries(this.defaultEntries());
+      onEntries({});
       return () => undefined;
     }
 
@@ -35,14 +34,10 @@ export class ShelfStorage {
           : this.readLocal(userId);
 
         onEntries(entries);
-
-        if (!snapshot.exists()) {
-          void this.write(userId, entries).catch(() => undefined);
-        }
       },
       () => {
         onEntries(this.readLocal(userId));
-      }
+      },
     );
   }
 
@@ -57,9 +52,9 @@ export class ShelfStorage {
       this.shelfDocument(userId),
       {
         entries,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
   }
 
@@ -71,19 +66,16 @@ export class ShelfStorage {
     const rawEntries = data['entries'];
 
     if (!rawEntries || typeof rawEntries !== 'object') {
-      return this.defaultEntries();
+      return {};
     }
 
-    return {
-      ...this.defaultEntries(),
-      ...(rawEntries as Record<string, ShelfEntry>)
-    };
+    return this.normalizeEntryMap(rawEntries as Record<string, Partial<ShelfEntry>>);
   }
 
   private readLocal(userId: string): Record<string, ShelfEntry> {
     const storedEntries = this.readJson<Record<string, ShelfEntry>>(this.storageKey(userId));
 
-    return storedEntries ?? this.defaultEntries();
+    return storedEntries ? this.normalizeEntryMap(storedEntries) : {};
   }
 
   private writeLocal(userId: string, entries: Record<string, ShelfEntry>): void {
@@ -92,20 +84,39 @@ export class ShelfStorage {
     }
   }
 
-  private defaultEntries(): Record<string, ShelfEntry> {
+  private normalizeEntryMap(
+    entries: Record<string, Partial<ShelfEntry>>,
+  ): Record<string, ShelfEntry> {
     return Object.fromEntries(
-      MOCK_GAMES.map((game) => [
-        game.id,
-        {
-          status: game.status,
-          rating: game.rating,
-          hoursPlayed: game.hoursPlayed,
-          progress: game.progress,
-          notes: game.notes,
-          personalGoal: game.personalGoal
-        }
-      ])
+      Object.entries(entries).map(([gameId, entry]) => [gameId, this.normalizeEntry(entry)]),
     );
+  }
+
+  private normalizeEntry(entry: Partial<ShelfEntry>): ShelfEntry {
+    return {
+      status: this.normalizeStatus(entry.status),
+      rating: this.clampNumber(entry.rating, 0, 5),
+      hoursPlayed: this.clampNumber(entry.hoursPlayed, 0, 999),
+      progress: this.clampNumber(entry.progress, 0, 100),
+      notes: String(entry.notes ?? ''),
+      personalGoal: String(entry.personalGoal ?? ''),
+    };
+  }
+
+  private normalizeStatus(status: unknown): ShelfEntry['status'] {
+    return status === 'Backlog' || status === 'In corso' || status === 'Completato'
+      ? status
+      : 'Wishlist';
+  }
+
+  private clampNumber(value: unknown, min: number, max: number): number {
+    const numericValue = Number(value);
+
+    if (Number.isNaN(numericValue)) {
+      return min;
+    }
+
+    return Math.min(max, Math.max(min, Math.round(numericValue)));
   }
 
   private storageKey(userId: string): string {

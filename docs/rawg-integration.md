@@ -25,18 +25,28 @@ API esterna.
 ## Configurazione della API key
 
 La API key non e inclusa nel repository pubblico. Per la demo viene salvata su Firestore nel
-documento `catalog/default`, campo `rawgApiKey`, e l'app la recupera automaticamente quando serve
-chiamare RAWG.
+documento `integrations/rawg`, campo `apiKey`, leggibile solo dagli utenti admin tramite Security
+Rules. L'app la recupera automaticamente quando un admin usa l'import RAWG.
 
 Per ottenere o rigenerare la key:
 
 1. Aprire la documentazione RAWG: `https://rawg.io/apidocs`.
 2. Richiedere una API key con il form "Get an API Key".
 3. Usare come URL dell'app il link del repository pubblico o, dopo il deploy, l'URL Firebase Hosting.
-4. Salvare la key nel campo `rawgApiKey` del documento Firestore `catalog/default`.
+4. Salvare la key nel campo `apiKey` del documento Firestore `integrations/rawg`.
 
 Il servizio supporta anche una key locale nel localStorage del browser con la chiave
 `gameshelf:rawg-api-key`, utile solo come fallback di sviluppo.
+
+Se una key era stata salvata nel vecchio documento pubblico `catalog/default`, la migrazione si puo
+eseguire con:
+
+```bash
+npm run migrate:rawg-config
+```
+
+Il comando copia la key in `integrations/rawg` e rimuove il vecchio campo `rawgApiKey` dal catalogo
+pubblico.
 
 ## Flusso di import
 

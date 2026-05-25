@@ -47,6 +47,25 @@
     </article>
   </div>
 
+  <section class="pwa-panel" aria-labelledby="pwa-title">
+    <div>
+      <p class="eyebrow">PWA</p>
+      <h2 id="pwa-title">App installabile e pronta offline</h2>
+      <p>
+        Stato: {{ pwaSupported() ? (pwaOnline() ? 'online' : 'offline') : 'non supportata' }} /
+        {{ pwaStandalone() ? 'installata' : 'browser' }} / notifiche
+        {{ notificationPermission() }}
+      </p>
+    </div>
+
+    <div class="pwa-actions">
+      <button type="button" [disabled]="!pwaInstallable()" (click)="installPwa()">Installa</button>
+      <button type="button" [disabled]="!pwaSupported()" (click)="sendReminderNotification()">
+        Notifica test
+      </button>
+    </div>
+  </section>
+
   @if (authReady() && !user()) {
     <section class="auth-panel" aria-label="Accesso utente">
       <div id="accesso">

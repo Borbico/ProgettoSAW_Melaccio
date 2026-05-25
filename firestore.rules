@@ -18,16 +18,45 @@ service cloud.firestore {
 
     match /catalog/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && validCatalogDocument();
+    }
+
+    match /integrations/rawg {
+      allow read, write: if isAdmin() && validRawgIntegration();
     }
 
     match /userRoles/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      allow write: if isAdmin() && validUserRole();
     }
 
     match /users/{userId}/shelf/{document=**} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && validShelfDocument();
+    }
+
+    function validCatalogDocument() {
+      return request.resource.data.keys().hasOnly(['games', 'updatedAt'])
+        && request.resource.data.games is list
+        && request.resource.data.games.size() <= 200;
+    }
+
+    function validRawgIntegration() {
+      return request.resource.data.keys().hasOnly(['apiKey', 'updatedAt'])
+        && request.resource.data.apiKey is string
+        && request.resource.data.apiKey.size() >= 16
+        && request.resource.data.apiKey.size() <= 120;
+    }
+
+    function validUserRole() {
+      return request.resource.data.keys().hasOnly(['role', 'updatedAt'])
+        && request.resource.data.role in ['admin', 'standard'];
+    }
+
+    function validShelfDocument() {
+      return request.resource.data.keys().hasOnly(['entries', 'updatedAt'])
+        && request.resource.data.entries is map
+        && request.resource.data.entries.keys().size() <= 200;
     }
   }
 }

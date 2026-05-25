@@ -218,15 +218,11 @@ export class RawgGames {
   }
 
   private names(items: RawgNamedItem[] | undefined): string[] {
-    return (items ?? [])
-      .map((item) => item.name?.trim() ?? '')
-      .filter(Boolean);
+    return (items ?? []).map((item) => item.name?.trim() ?? '').filter(Boolean);
   }
 
   private platformNames(items: RawgPlatformItem[] | undefined): string[] {
-    return (items ?? [])
-      .map((item) => item.platform?.name?.trim() ?? '')
-      .filter(Boolean);
+    return (items ?? []).map((item) => item.platform?.name?.trim() ?? '').filter(Boolean);
   }
 
   private inferModes(tags: string[]): string[] {
@@ -287,8 +283,8 @@ export class RawgGames {
   }
 
   private async readRemoteApiKey(): Promise<string> {
-    const snapshot = await getDoc(doc(this.firebase.db, 'catalog', 'default'));
-    const apiKey = snapshot.data()?.['rawgApiKey'];
+    const snapshot = await getDoc(doc(this.firebase.db, 'integrations', 'rawg'));
+    const apiKey = snapshot.data()?.['apiKey'];
 
     return typeof apiKey === 'string' ? apiKey.trim() : '';
   }

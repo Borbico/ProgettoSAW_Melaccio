@@ -1,0 +1,47 @@
+{
+  "name": "GameShelf",
+  "short_name": "GameShelf",
+  "description": "Catalogo videogiochi e libreria personale con Angular, Firebase e RAWG.",
+  "lang": "it",
+  "start_url": "/catalogo",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f4ef",
+  "theme_color": "#151515",
+  "categories": ["games", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Catalogo",
+      "short_name": "Catalogo",
+      "url": "/catalogo",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "MyShelf",
+      "short_name": "MyShelf",
+      "url": "/myshelf",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

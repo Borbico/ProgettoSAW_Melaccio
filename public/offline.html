@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151515">
+  <title>GameShelf offline</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      display: grid;
+      min-height: 100vh;
+      margin: 0;
+      place-items: center;
+      color: #151515;
+      background: #f7f4ef;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    main {
+      width: min(560px, calc(100vw - 32px));
+      padding: 28px;
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 18px;
+      border-radius: 8px;
+      color: #ffffff;
+      background: #151515;
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 8vw, 3.4rem);
+      line-height: 0.95;
+    }
+
+    p {
+      margin: 0;
+      color: #5f5f5f;
+      line-height: 1.6;
+    }
+
+    a {
+      display: inline-flex;
+      margin-top: 20px;
+      color: #267a71;
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span>GS</span>
+    <h1>GameShelf e offline.</h1>
+    <p>
+      Puoi riaprire le pagine gia visitate quando la cache e disponibile. Per sincronizzare catalogo,
+      MyShelf e dati RAWG serve tornare online.
+    </p>
+    <a href="/catalogo">Torna al catalogo</a>
+  </main>
+</body>
+</html>

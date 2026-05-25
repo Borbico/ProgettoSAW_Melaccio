@@ -2,6 +2,11 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.11.
 
+## Demo
+
+Applicazione pubblicata su Firebase Hosting:
+[`https://saw2026melaccio.web.app`](https://saw2026melaccio.web.app).
+
 ## Development server
 
 To start a local development server, run:
@@ -53,6 +58,20 @@ ma il catalogo viene aggiornato solo premendo il pulsante `Salva`.
 
 La documentazione di supporto per configurazione, uso e motivazioni dell'integrazione si trova in
 [`docs/rawg-integration.md`](docs/rawg-integration.md).
+
+## PWA
+
+GameShelf include manifest, icone, service worker, fallback offline e una notifica di test dal
+profilo utente. La documentazione dei dettagli PWA si trova in [`docs/pwa.md`](docs/pwa.md).
+
+## Deploy
+
+Per pubblicare l'app su Firebase Hosting:
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
 
 ## Running end-to-end tests
 

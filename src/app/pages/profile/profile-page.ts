@@ -5,6 +5,7 @@ import { AuthSession } from '../../services/auth-session';
 import { AccessControl } from '../../services/access-control';
 import { GameCatalog } from '../../services/game-catalog';
 import { NotificationCenter, NotificationTone } from '../../services/notification-center';
+import { PwaService } from '../../services/pwa';
 
 @Component({
   selector: 'app-profile-page',
@@ -17,6 +18,7 @@ export class ProfilePage {
   private readonly auth = inject(AuthSession);
   private readonly catalog = inject(GameCatalog);
   private readonly notifications = inject(NotificationCenter);
+  private readonly pwa = inject(PwaService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -25,6 +27,11 @@ export class ProfilePage {
   protected readonly roleLabel = this.access.roleLabel;
   protected readonly canEditCatalog = this.access.canEditCatalog;
   protected readonly canEditShelf = this.access.canEditShelf;
+  protected readonly pwaSupported = this.pwa.supported;
+  protected readonly pwaInstallable = this.pwa.installable;
+  protected readonly pwaStandalone = this.pwa.standalone;
+  protected readonly pwaOnline = this.pwa.online;
+  protected readonly notificationPermission = this.pwa.notificationPermission;
   protected readonly signInEmail = signal('');
   protected readonly signInPassword = signal('');
   protected readonly registerName = signal('');
@@ -131,6 +138,34 @@ export class ProfilePage {
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
     this.setAuthFeedback('info', 'Sessione terminata.');
+  }
+
+  protected async installPwa(): Promise<void> {
+    const installed = await this.pwa.install();
+
+    if (installed) {
+      this.notifications.success('App installata', 'GameShelf e pronta come PWA.');
+      return;
+    }
+
+    this.notifications.info(
+      'Installazione non disponibile',
+      'Usa il comando di installazione del browser se il pulsante non appare.',
+    );
+  }
+
+  protected async sendReminderNotification(): Promise<void> {
+    const sent = await this.pwa.showReminderNotification();
+
+    if (sent) {
+      this.notifications.success('Notifica inviata', 'Il promemoria PWA e stato mostrato.');
+      return;
+    }
+
+    this.notifications.warning(
+      'Notifiche non attive',
+      'Il browser non supporta le notifiche oppure il permesso non e stato concesso.',
+    );
   }
 
   private setAuthFeedback(tone: NotificationTone, message: string): void {

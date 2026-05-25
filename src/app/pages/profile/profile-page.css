@@ -131,6 +131,51 @@ h1 {
   color: rgba(255, 255, 255, 0.76);
 }
 
+.pwa-panel {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(21, 21, 21, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+}
+
+.pwa-panel h2 {
+  font-size: 1.35rem;
+}
+
+.pwa-panel p:not(.eyebrow) {
+  margin-top: 8px;
+  color: #5f5f5f;
+  font-weight: 800;
+}
+
+.pwa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pwa-actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(21, 21, 21, 0.14);
+  border-radius: 999px;
+  color: #ffffff;
+  background: #151515;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.pwa-actions button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 .auth-panel {
   grid-column: 1 / -1;
   display: grid;
@@ -225,5 +270,10 @@ h1 {
   .profile-grid,
   .auth-panel {
     grid-template-columns: 1fr;
+  }
+
+  .pwa-panel {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
