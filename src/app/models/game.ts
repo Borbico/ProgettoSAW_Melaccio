@@ -17,6 +17,7 @@ export interface Game {
   description: string;
   notes: string;
   personalGoal: string;
+  updatedAt?: string;
   coverTheme: string;
   coverImageUrl?: string;
   sourceName?: string;

@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MOCK_GAMES } from '../data/mock-games';
 import { CatalogGame, toCatalogGame, toShelfEntry } from '../models/catalog-game';
 import { Game } from '../models/game';
+import { PublicShelfSummary } from '../models/public-shelf-summary';
 import { ShelfEntry } from '../models/shelf-entry';
 import { AccessControl } from './access-control';
 import { AuthSession } from './auth-session';
@@ -27,6 +28,7 @@ class FakeCatalogStorage {
 
 class FakeShelfStorage {
   lastWrittenEntries: Record<string, ShelfEntry> = {};
+  lastWrittenSummary: PublicShelfSummary | undefined;
   private entries = Object.fromEntries(MOCK_GAMES.map((game) => [game.id, toShelfEntry(game)]));
 
   setEntries(entries: Record<string, ShelfEntry>): void {
@@ -38,9 +40,14 @@ class FakeShelfStorage {
     return () => undefined;
   }
 
-  async write(_userId: string, entries: Record<string, ShelfEntry>): Promise<void> {
+  async write(
+    _userId: string,
+    entries: Record<string, ShelfEntry>,
+    publicSummary?: PublicShelfSummary,
+  ): Promise<void> {
     this.entries = entries;
     this.lastWrittenEntries = entries;
+    this.lastWrittenSummary = publicSummary;
   }
 }
 
@@ -87,12 +94,12 @@ describe('GameCatalog', () => {
     expect(id).toBe('tunic');
     expect(persistence).toBe('firebase');
     expect(catalog.findCatalogById(id)?.title).toBe('Tunic');
-    expect(catalog.findShelfById(id)?.status).toBe('Wishlist');
+    expect(catalog.findShelfById(id)).toBeUndefined();
     expect(catalogStorage.lastWrittenGames.some((savedGame) => savedGame.id === id)).toBe(true);
     expect(shelfStorage.lastWrittenEntries[id]).toBeUndefined();
   });
 
-  it('composes neutral shelf defaults when a user has no saved entries', () => {
+  it('keeps MyShelf empty when a user has no saved entries', () => {
     shelfStorage.setEntries({});
     TestBed.resetTestingModule();
 
@@ -116,12 +123,9 @@ describe('GameCatalog', () => {
 
     const freshCatalog = TestBed.inject(GameCatalog);
     TestBed.flushEffects();
-    const hades = freshCatalog.findShelfById('hades');
 
-    expect(hades?.status).toBe('Wishlist');
-    expect(hades?.rating).toBe(0);
-    expect(hades?.hoursPlayed).toBe(0);
-    expect(hades?.progress).toBe(0);
+    expect(freshCatalog.shelfGames()).toEqual([]);
+    expect(freshCatalog.findShelfById('hades')).toBeUndefined();
   });
 
   it('updates public catalog fields without overwriting personal shelf stats', async () => {
@@ -142,7 +146,12 @@ describe('GameCatalog', () => {
     expect(catalogStorage.lastWrittenGames.find((game) => game.id === 'hades')?.title).toBe(
       'Hades II',
     );
-    expect(shelfStorage.lastWrittenEntries['hades']).toBeUndefined();
+    expect(shelfStorage.lastWrittenEntries['hades']?.hoursPlayed).toBe(
+      originalShelfGame.hoursPlayed,
+    );
+    expect(shelfStorage.lastWrittenSummary?.recentGames.some((game) => game.title === 'Hades II')).toBe(
+      true,
+    );
   });
 
   it('deletes a game from catalog and shelf persistence', async () => {
@@ -169,20 +178,58 @@ describe('GameCatalog', () => {
   });
 
   it('updates personal shelf stats without changing public catalog stats', async () => {
-    const persistence = await catalog.updateShelfEntry('hades', {
+    shelfStorage.setEntries({});
+    TestBed.resetTestingModule();
+
+    const currentUser = signal({ id: 'new-user' });
+
+    TestBed.configureTestingModule({
+      providers: [
+        GameCatalog,
+        {
+          provide: AccessControl,
+          useValue: {
+            canEditCatalog: canEditCatalog.asReadonly(),
+            canEditShelf: canEditShelf.asReadonly(),
+          },
+        },
+        { provide: AuthSession, useValue: { currentUser: currentUser.asReadonly() } },
+        { provide: CatalogStorage, useValue: catalogStorage },
+        { provide: ShelfStorage, useValue: shelfStorage },
+      ],
+    });
+
+    const freshCatalog = TestBed.inject(GameCatalog);
+    TestBed.flushEffects();
+
+    const persistence = await freshCatalog.updateShelfEntry('hades', {
       status: 'Completato',
       rating: 2,
       hoursPlayed: 88,
     });
 
     expect(persistence).toBe('firebase');
-    expect(catalog.findShelfById('hades')?.status).toBe('Completato');
-    expect(catalog.findShelfById('hades')?.hoursPlayed).toBe(88);
+    expect(freshCatalog.findShelfById('hades')?.status).toBe('Completato');
+    expect(freshCatalog.findShelfById('hades')?.hoursPlayed).toBe(88);
+    expect(freshCatalog.shelfGames().length).toBe(1);
+    expect(shelfStorage.lastWrittenSummary).toMatchObject({
+      savedCount: 1,
+      completedCount: 1,
+      totalHours: 88,
+      recentGames: [
+        {
+          id: 'hades',
+          title: 'Hades',
+          status: 'Completato',
+          hoursPlayed: 88,
+        },
+      ],
+    });
     expect(
-      (catalog.findCatalogById('hades') as unknown as Record<string, unknown>)['status'],
+      (freshCatalog.findCatalogById('hades') as unknown as Record<string, unknown>)['status'],
     ).toBeUndefined();
     expect(
-      (catalog.findCatalogById('hades') as unknown as Record<string, unknown>)['hoursPlayed'],
+      (freshCatalog.findCatalogById('hades') as unknown as Record<string, unknown>)['hoursPlayed'],
     ).toBeUndefined();
   });
 

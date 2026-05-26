@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { MOCK_GAMES } from '../data/mock-games';
 import { CatalogGame, toCatalogGame } from '../models/catalog-game';
+import { clampNumber } from '../utils/number-utils';
 import { FirebaseClient } from './firebase-client';
 
 @Injectable({
@@ -98,7 +99,7 @@ export class CatalogStorage {
       platform: String(game.platform ?? 'PC'),
       modes: this.normalizeStringList(game.modes),
       tags: this.normalizeStringList(game.tags),
-      releaseYear: this.clampNumber(game.releaseYear, 1970, 2035),
+      releaseYear: clampNumber(game.releaseYear, 1970, 2035),
       description: String(game.description ?? ''),
       coverTheme: String(game.coverTheme ?? 'cover-neon'),
     };
@@ -125,16 +126,6 @@ export class CatalogStorage {
     }
 
     return value.map((item) => String(item).trim()).filter(Boolean);
-  }
-
-  private clampNumber(value: unknown, min: number, max: number): number {
-    const numericValue = Number(value);
-
-    if (Number.isNaN(numericValue)) {
-      return min;
-    }
-
-    return Math.min(max, Math.max(min, Math.round(numericValue)));
   }
 
   private normalizeUrl(value: unknown): string {

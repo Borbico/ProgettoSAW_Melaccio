@@ -30,50 +30,64 @@
   </section>
 }
 
-<section class="lane-grid" aria-label="Stati della libreria">
-  @for (lane of lanes(); track lane.title) {
-    <article class="lane">
-      <header>
-        <h2>{{ lane.title }}</h2>
-        <span>{{ lane.games.length }}</span>
-      </header>
+@if (hasShelfGames()) {
+  <section class="lane-grid" aria-label="Stati della libreria">
+    @for (lane of lanes(); track lane.title) {
+      <article class="lane">
+        <header>
+          <h2>{{ lane.title }}</h2>
+          <span>{{ lane.games.length }}</span>
+        </header>
 
-      <div class="lane-list">
-        @for (game of lane.games; track game.id) {
-          <article class="shelf-card">
-            <a [routerLink]="['/giochi', game.id]" [attr.aria-label]="'Apri ' + game.title">
-              <div [class]="'game-cover mini-cover ' + game.coverTheme">
-                <div
-                  class="cover-image-layer"
-                  [style.background-image]="coverImageStyle(game)"
-                  aria-hidden="true"
-                ></div>
-                <span>{{ game.progress }}%</span>
-              </div>
-              <div class="shelf-card-body">
-                <p>{{ game.genre }} &middot; {{ game.platform }}</p>
-                <h3>{{ game.title }}</h3>
-                <div class="progress-track" aria-hidden="true">
-                  <span [style.width.%]="game.progress"></span>
+        <div class="lane-list">
+          @for (game of lane.games; track game.id) {
+            <article class="shelf-card">
+              <a [routerLink]="['/giochi', game.id]" [attr.aria-label]="'Apri ' + game.title">
+                <div [class]="'game-cover mini-cover ' + game.coverTheme">
+                  <div
+                    class="cover-image-layer"
+                    [style.background-image]="coverImageStyle(game)"
+                    aria-hidden="true"
+                  ></div>
+                  <span>{{ game.progress }}%</span>
                 </div>
-              </div>
-            </a>
+                <div class="shelf-card-body">
+                  <p>{{ game.genre }} &middot; {{ game.platform }}</p>
+                  <h3>{{ game.title }}</h3>
+                  <div class="progress-track" aria-hidden="true">
+                    <span [style.width.%]="game.progress"></span>
+                  </div>
+                </div>
+              </a>
 
-            @if (canEditShelf()) {
-              <div class="quick-actions" aria-label="Azioni rapide">
-                @if (game.status !== 'In corso') {
-                  <button type="button" (click)="setStatus(game, 'In corso')">Avvia</button>
-                }
-                @if (game.status !== 'Completato') {
-                  <button type="button" (click)="setStatus(game, 'Completato')">Completa</button>
-                }
-              </div>
-            }
-          </article>
-        } @empty {
-          <div class="lane-empty">Nessun gioco in questa sezione.</div>
-        }
-      </div>
-    </article>
-  }
-</section>
+              @if (canEditShelf()) {
+                <div class="quick-actions" aria-label="Azioni rapide">
+                  @for (status of statuses; track status) {
+                    @if (game.status !== status) {
+                      <button
+                        type="button"
+                        [class.is-primary-action]="status === 'In corso' || status === 'Completato'"
+                        (click)="setStatus(game, status)"
+                      >
+                        {{ statusActionLabel(status) }}
+                      </button>
+                    }
+                  }
+                </div>
+              }
+            </article>
+          } @empty {
+            <div class="lane-empty">Nessun gioco in questa sezione.</div>
+          }
+        </div>
+      </article>
+    }
+  </section>
+} @else {
+  <section class="shelf-empty-state">
+    <p class="eyebrow">Shelf vuota</p>
+    <h2>Inizia dal catalogo.</h2>
+    <p>Apri una scheda gioco e salvala nella tua MyShelf per seguire progressi, voto e note.</p>
+    <a routerLink="/catalogo">Vai al catalogo</a>
+  </section>
+}

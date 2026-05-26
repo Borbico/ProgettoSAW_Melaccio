@@ -35,9 +35,6 @@ Per ottenere o rigenerare la key:
 3. Usare come URL dell'app il link del repository pubblico o, dopo il deploy, l'URL Firebase Hosting.
 4. Salvare la key nel campo `apiKey` del documento Firestore `integrations/rawg`.
 
-Il servizio supporta anche una key locale nel localStorage del browser con la chiave
-`gameshelf:rawg-api-key`, utile solo come fallback di sviluppo.
-
 Se una key era stata salvata nel vecchio documento pubblico `catalog/default`, la migrazione si puo
 eseguire con:
 
@@ -67,10 +64,11 @@ visualizzati.
 
 ## Sicurezza e limiti
 
-In un'app solo frontend una API key inserita nel browser non puo essere considerata davvero segreta.
-Per il progetto didattico e sufficiente usarla come configurazione locale, senza pubblicarla nel
-repository. In un progetto reale sarebbe preferibile spostare la chiamata RAWG dietro un backend o
-una Firebase Function, cosi da non esporre la key al client.
+In un'app solo frontend una API key letta dal browser non puo essere considerata davvero segreta,
+anche se viene conservata su Firestore e resa leggibile solo agli admin. Per il progetto didattico e
+sufficiente non versionarla nel repository e limitarne la lettura con le Security Rules. In un
+progetto reale sarebbe preferibile spostare la chiamata RAWG dietro un backend o una Firebase
+Function, cosi da non esporre la key al client.
 
 ## Attribuzione
 

@@ -3,13 +3,13 @@ import { RouterLink } from '@angular/router';
 import { Game, GameStatus } from '../../models/game';
 import { AccessControl } from '../../services/access-control';
 import { AuthSession } from '../../services/auth-session';
-import { GameCatalog, PersistenceResult } from '../../services/game-catalog';
+import { GameCatalog } from '../../services/game-catalog';
+import type { PersistenceResult } from '../../services/game-catalog';
 import { NotificationCenter } from '../../services/notification-center';
-
-interface ShelfLane {
-  title: GameStatus;
-  games: Game[];
-}
+import { coverImageStyle } from '../../utils/cover-image-style';
+import { notifyPersistenceResult } from '../../utils/persistence-feedback';
+import { buildShelfLanes, SHELF_STATUS_ORDER } from '../../utils/shelf-lanes';
+import { gameStatusActionLabel, gameStatusGroupLabel } from '../../utils/status-labels';
 
 @Component({
   selector: 'app-my-shelf-page',
@@ -27,12 +27,9 @@ export class MyShelfPage {
   protected readonly displayName = this.auth.displayName;
   protected readonly canEditShelf = this.access.canEditShelf;
   protected readonly games = this.catalog.shelfGames;
-  protected readonly lanes = computed<ShelfLane[]>(() => [
-    { title: 'In corso', games: this.games().filter((game) => game.status === 'In corso') },
-    { title: 'Backlog', games: this.games().filter((game) => game.status === 'Backlog') },
-    { title: 'Wishlist', games: this.games().filter((game) => game.status === 'Wishlist') },
-    { title: 'Completato', games: this.games().filter((game) => game.status === 'Completato') },
-  ]);
+  protected readonly hasShelfGames = computed(() => this.games().length > 0);
+  protected readonly statuses: GameStatus[] = SHELF_STATUS_ORDER;
+  protected readonly lanes = computed(() => buildShelfLanes(this.games()));
 
   protected readonly activeGames = computed(
     () => this.games().filter((game) => game.status === 'In corso').length,
@@ -61,18 +58,16 @@ export class MyShelfPage {
     this.notifyPersistence(
       persistence,
       'MyShelf aggiornata',
-      `${game.title} spostato in ${status}.`,
+      `${game.title} si trova ora nella sezione ${gameStatusGroupLabel(status)}.`,
     );
   }
 
+  protected statusActionLabel(status: GameStatus): string {
+    return gameStatusActionLabel(status);
+  }
+
   protected coverImageStyle(game: Game): string | null {
-    const imageUrl = game.coverImageUrl?.trim();
-
-    if (!imageUrl) {
-      return null;
-    }
-
-    return `linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.46)), url("${imageUrl}")`;
+    return coverImageStyle(game);
   }
 
   private notifyPersistence(
@@ -80,27 +75,9 @@ export class MyShelfPage {
     successTitle: string,
     successMessage: string,
   ): void {
-    if (persistence === 'firebase') {
-      this.notifications.success(successTitle, `${successMessage} Salvato su Firebase.`);
-      return;
-    }
-
-    if (persistence === 'fallback') {
-      this.notifications.warning(
-        'Salvataggio locale',
-        `${successMessage} Firebase non ha risposto: la copia locale e aggiornata.`,
-      );
-      return;
-    }
-
-    if (persistence === 'denied') {
-      this.notifications.error(
-        'Accesso richiesto',
-        'Accedi con un profilo per modificare la tua MyShelf.',
-      );
-      return;
-    }
-
-    this.notifications.info(successTitle, `${successMessage} Salvataggio locale attivo.`);
+    notifyPersistenceResult(this.notifications, persistence, successTitle, successMessage, {
+      deniedTitle: 'Accesso richiesto',
+      deniedMessage: 'Accedi con un profilo per modificare la tua MyShelf.',
+    });
   }
 }

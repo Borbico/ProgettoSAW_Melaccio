@@ -7,4 +7,5 @@ export interface ShelfEntry {
   progress: number;
   notes: string;
   personalGoal: string;
+  updatedAt?: string;
 }

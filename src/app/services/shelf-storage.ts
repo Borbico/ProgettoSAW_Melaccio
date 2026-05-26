@@ -5,9 +5,11 @@ import {
   doc,
   onSnapshot,
   serverTimestamp,
-  setDoc,
+  writeBatch,
 } from 'firebase/firestore';
+import { PublicShelfSummary } from '../models/public-shelf-summary';
 import { ShelfEntry } from '../models/shelf-entry';
+import { normalizeShelfEntry } from '../utils/shelf-entry-utils';
 import { FirebaseClient } from './firebase-client';
 
 @Injectable({
@@ -41,14 +43,19 @@ export class ShelfStorage {
     );
   }
 
-  async write(userId: string, entries: Record<string, ShelfEntry>): Promise<void> {
+  async write(
+    userId: string,
+    entries: Record<string, ShelfEntry>,
+    publicSummary?: PublicShelfSummary,
+  ): Promise<void> {
     if (userId === this.guestUserId) {
       return;
     }
 
     this.writeLocal(userId, entries);
+    const batch = writeBatch(this.firebase.db);
 
-    await setDoc(
+    batch.set(
       this.shelfDocument(userId),
       {
         entries,
@@ -56,6 +63,19 @@ export class ShelfStorage {
       },
       { merge: true },
     );
+
+    if (publicSummary) {
+      batch.set(
+        doc(this.firebase.db, 'userProfiles', userId),
+        {
+          shelfSummary: publicSummary,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+
+    await batch.commit();
   }
 
   private shelfDocument(userId: string) {
@@ -88,35 +108,8 @@ export class ShelfStorage {
     entries: Record<string, Partial<ShelfEntry>>,
   ): Record<string, ShelfEntry> {
     return Object.fromEntries(
-      Object.entries(entries).map(([gameId, entry]) => [gameId, this.normalizeEntry(entry)]),
+      Object.entries(entries).map(([gameId, entry]) => [gameId, normalizeShelfEntry(entry)]),
     );
-  }
-
-  private normalizeEntry(entry: Partial<ShelfEntry>): ShelfEntry {
-    return {
-      status: this.normalizeStatus(entry.status),
-      rating: this.clampNumber(entry.rating, 0, 5),
-      hoursPlayed: this.clampNumber(entry.hoursPlayed, 0, 999),
-      progress: this.clampNumber(entry.progress, 0, 100),
-      notes: String(entry.notes ?? ''),
-      personalGoal: String(entry.personalGoal ?? ''),
-    };
-  }
-
-  private normalizeStatus(status: unknown): ShelfEntry['status'] {
-    return status === 'Backlog' || status === 'In corso' || status === 'Completato'
-      ? status
-      : 'Wishlist';
-  }
-
-  private clampNumber(value: unknown, min: number, max: number): number {
-    const numericValue = Number(value);
-
-    if (Number.isNaN(numericValue)) {
-      return min;
-    }
-
-    return Math.min(max, Math.max(min, Math.round(numericValue)));
   }
 
   private storageKey(userId: string): string {

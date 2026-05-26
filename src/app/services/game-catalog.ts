@@ -1,14 +1,17 @@
-import { Injectable, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Unsubscribe } from 'firebase/firestore';
-import { CatalogGame, toCatalogGame, toShelfEntry } from '../models/catalog-game';
+import { CatalogGame, toCatalogGame } from '../models/catalog-game';
 import { Game, GameStatus } from '../models/game';
 import { ShelfEntry } from '../models/shelf-entry';
+import type { PersistenceResult } from '../models/persistence-result';
+import { defaultShelfEntry } from '../utils/shelf-entry-utils';
+import { composeShelfGames, publicShelfSummary } from '../utils/shelf-summary';
 import { AccessControl } from './access-control';
 import { AuthSession } from './auth-session';
 import { CatalogStorage } from './catalog-storage';
 import { ShelfStorage } from './shelf-storage';
 
-export type PersistenceResult = 'firebase' | 'local' | 'fallback' | 'denied';
+export type { PersistenceResult };
 
 @Injectable({
   providedIn: 'root',
@@ -21,17 +24,17 @@ export class GameCatalog {
   private readonly guestUserId = 'guest';
   private readonly catalogGamesState = signal<CatalogGame[]>([]);
   private readonly shelfEntriesState = signal<Record<string, ShelfEntry>>({});
-  private readonly shelfGamesState = signal<Game[]>([]);
 
   readonly catalogGames = this.catalogGamesState.asReadonly();
-  readonly shelfGames = this.shelfGamesState.asReadonly();
+  readonly shelfGames = computed(() =>
+    composeShelfGames(this.catalogGamesState(), this.shelfEntriesState()),
+  );
   readonly games = this.catalogGames;
 
   constructor() {
     const unsubscribeCatalog: Unsubscribe = this.catalogStorage.watch((catalogGames) => {
       untracked(() => {
         this.catalogGamesState.set(catalogGames);
-        this.syncGames();
       });
     });
 
@@ -40,7 +43,6 @@ export class GameCatalog {
       const unsubscribe: Unsubscribe = this.shelfStorage.watch(userId, (entries) => {
         untracked(() => {
           this.shelfEntriesState.set(entries);
-          this.syncGames();
         });
       });
 
@@ -75,7 +77,6 @@ export class GameCatalog {
     const nextGame = { ...game, id };
 
     this.catalogGamesState.update((games) => [...games, toCatalogGame(nextGame)]);
-    this.syncGames();
     const persistence = await this.persistCatalog();
 
     return { id, persistence };
@@ -93,9 +94,16 @@ export class GameCatalog {
         catalogGame.id === gameId ? toCatalogGame(nextGame) : catalogGame,
       ),
     );
-    this.syncGames();
 
-    return this.persistCatalog();
+    const catalogPersistence = await this.persistCatalog();
+
+    if (!this.shelfEntriesState()[gameId]) {
+      return catalogPersistence;
+    }
+
+    const shelfPersistence = await this.persistCurrentShelf();
+
+    return this.combinePersistence(catalogPersistence, shelfPersistence);
   }
 
   async deleteGame(gameId: string): Promise<PersistenceResult> {
@@ -109,22 +117,13 @@ export class GameCatalog {
 
       return remainingEntries;
     });
-    this.syncGames();
 
     const [catalogPersistence, shelfPersistence] = await Promise.all([
       this.persistCatalog(),
       this.persistCurrentShelf(),
     ]);
 
-    if (catalogPersistence === 'fallback' || shelfPersistence === 'fallback') {
-      return 'fallback';
-    }
-
-    if (catalogPersistence === 'firebase' && shelfPersistence === 'firebase') {
-      return 'firebase';
-    }
-
-    return catalogPersistence;
+    return this.combinePersistence(catalogPersistence, shelfPersistence);
   }
 
   updateStatus(gameId: string, status: GameStatus): Promise<PersistenceResult> {
@@ -143,30 +142,14 @@ export class GameCatalog {
     this.shelfEntriesState.update((entries) => ({
       ...entries,
       [gameId]: {
-        ...this.defaultShelfEntry(),
+        ...defaultShelfEntry(),
         ...(entries[gameId] ?? {}),
         ...entry,
+        updatedAt: new Date().toISOString(),
       },
     }));
-    this.syncGames();
 
     return this.persistCurrentShelf();
-  }
-
-  private syncGames(): void {
-    this.shelfGamesState.set(
-      this.composeShelfGames(this.catalogGamesState(), this.shelfEntriesState()),
-    );
-  }
-
-  private composeShelfGames(
-    catalogGames: CatalogGame[],
-    entries: Record<string, ShelfEntry>,
-  ): Game[] {
-    return catalogGames.map((game) => ({
-      ...game,
-      ...(entries[game.id] ?? this.defaultShelfEntry()),
-    }));
   }
 
   private async persistCatalog(): Promise<PersistenceResult> {
@@ -181,12 +164,14 @@ export class GameCatalog {
 
   private async persistCurrentShelf(): Promise<PersistenceResult> {
     const userId = this.auth.currentUser()?.id ?? this.guestUserId;
-    const entries = Object.fromEntries(
-      this.shelfGames().map((game) => [game.id, toShelfEntry(game)]),
-    );
+    const entries = this.shelfEntriesState();
+    const publicSummary =
+      userId === this.guestUserId
+        ? undefined
+        : publicShelfSummary(composeShelfGames(this.catalogGamesState(), entries));
 
     try {
-      await this.shelfStorage.write(userId, entries);
+      await this.shelfStorage.write(userId, entries, publicSummary);
 
       return userId === this.guestUserId ? 'local' : 'firebase';
     } catch {
@@ -194,15 +179,23 @@ export class GameCatalog {
     }
   }
 
-  private defaultShelfEntry(): ShelfEntry {
-    return {
-      status: 'Wishlist',
-      rating: 0,
-      hoursPlayed: 0,
-      progress: 0,
-      notes: '',
-      personalGoal: '',
-    };
+  private combinePersistence(
+    first: PersistenceResult,
+    second: PersistenceResult,
+  ): PersistenceResult {
+    if (first === 'fallback' || second === 'fallback') {
+      return 'fallback';
+    }
+
+    if (first === 'denied' || second === 'denied') {
+      return 'denied';
+    }
+
+    if (first === 'firebase' && second === 'firebase') {
+      return 'firebase';
+    }
+
+    return first;
   }
 
   private uniqueGameId(title: string): string {

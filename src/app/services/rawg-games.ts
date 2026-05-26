@@ -71,35 +71,10 @@ interface RawgGameDetail extends RawgGameListItem {
 export class RawgGames {
   private readonly firebase = inject(FirebaseClient);
   private readonly baseUrl = 'https://api.rawg.io/api';
-  private readonly apiKeyStorageKey = 'gameshelf:rawg-api-key';
-  private readonly apiKeyState = signal(this.readApiKey());
+  private readonly apiKeyState = signal('');
   private remoteApiKeyRequest: Promise<string> | null = null;
 
   readonly apiKeyConfigured = signal(Boolean(this.apiKeyState()));
-
-  setApiKey(apiKey: string): void {
-    const normalizedKey = apiKey.trim();
-
-    if (!normalizedKey) {
-      return;
-    }
-
-    if (this.hasStorage()) {
-      localStorage.setItem(this.apiKeyStorageKey, normalizedKey);
-    }
-
-    this.apiKeyState.set(normalizedKey);
-    this.apiKeyConfigured.set(true);
-  }
-
-  clearApiKey(): void {
-    if (this.hasStorage()) {
-      localStorage.removeItem(this.apiKeyStorageKey);
-    }
-
-    this.apiKeyState.set('');
-    this.apiKeyConfigured.set(false);
-  }
 
   async searchGames(query: string, page = 1, pageSize = 12): Promise<RawgSearchResult> {
     const normalizedQuery = query.trim();
@@ -158,9 +133,17 @@ export class RawgGames {
       this.remoteApiKeyRequest = this.readRemoteApiKey();
     }
 
-    const remoteApiKey = await this.remoteApiKeyRequest;
+    let remoteApiKey = '';
+
+    try {
+      remoteApiKey = await this.remoteApiKeyRequest;
+    } catch {
+      this.remoteApiKeyRequest = null;
+      throw new Error('RAWG_API_KEY_UNAVAILABLE');
+    }
 
     if (!remoteApiKey) {
+      this.remoteApiKeyRequest = null;
       throw new Error('RAWG_API_KEY_MISSING');
     }
 
@@ -173,7 +156,13 @@ export class RawgGames {
   private async fetchJson<T>(url: URL): Promise<T> {
     url.searchParams.set('key', await this.apiKey());
 
-    const response = await fetch(url.toString());
+    let response: Response;
+
+    try {
+      response = await fetch(url.toString());
+    } catch {
+      throw new Error('RAWG_NETWORK_UNAVAILABLE');
+    }
 
     if (!response.ok) {
       throw new Error(`RAWG_REQUEST_FAILED_${response.status}`);
@@ -274,22 +263,10 @@ export class RawgGames {
     return url.startsWith('https://') ? url : '';
   }
 
-  private readApiKey(): string {
-    if (!this.hasStorage()) {
-      return '';
-    }
-
-    return localStorage.getItem(this.apiKeyStorageKey)?.trim() ?? '';
-  }
-
   private async readRemoteApiKey(): Promise<string> {
     const snapshot = await getDoc(doc(this.firebase.db, 'integrations', 'rawg'));
     const apiKey = snapshot.data()?.['apiKey'];
 
     return typeof apiKey === 'string' ? apiKey.trim() : '';
-  }
-
-  private hasStorage(): boolean {
-    return typeof localStorage !== 'undefined';
   }
 }

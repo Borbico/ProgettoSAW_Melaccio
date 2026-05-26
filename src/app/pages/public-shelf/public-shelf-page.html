@@ -1,0 +1,90 @@
+<a class="back-link" routerLink="/community">Torna alla community</a>
+
+@if (user(); as selectedUser) {
+  <section class="public-shelf-hero" aria-labelledby="public-shelf-title">
+    <div>
+      <p class="eyebrow">{{ selectedUser.handle }}</p>
+      <h1 id="public-shelf-title">Shelf di {{ selectedUser.displayName }}.</h1>
+      @if (currentUser()?.id !== selectedUser.id) {
+        <button
+          type="button"
+          class="follow-button"
+          [class.is-following]="selectedUser.followed"
+          [disabled]="followBusy()"
+          (click)="toggleFollow()"
+        >
+          {{ selectedUser.followed ? 'Seguito' : 'Segui profilo' }}
+        </button>
+      }
+    </div>
+
+    <div class="public-stats" aria-label="Statistiche shelf pubblica">
+      <article>
+        <strong>{{ selectedUser.savedCount }}</strong>
+        <span>giochi salvati</span>
+      </article>
+      <article>
+        <strong>{{ selectedUser.activeCount }}</strong>
+        <span>in corso</span>
+      </article>
+      <article>
+        <strong>{{ selectedUser.totalHours }}</strong>
+        <span>ore registrate</span>
+      </article>
+    </div>
+  </section>
+
+  @if (!shelfLoaded()) {
+    <section class="public-empty">
+      <h2>Caricamento shelf...</h2>
+      <p>Recupero i giochi salvati da questo profilo.</p>
+    </section>
+  } @else if (selectedUser.games.length) {
+    <section class="public-lane-grid" aria-label="Shelf pubblica">
+      @for (lane of lanes(); track lane.title) {
+        <article class="public-lane">
+          <header>
+            <h2>{{ lane.title }}</h2>
+            <span>{{ lane.games.length }}</span>
+          </header>
+
+          <div class="public-lane-list">
+            @for (game of lane.games; track game.id) {
+              <a class="public-game-card" [routerLink]="['/giochi', game.id]">
+                <div [class]="'game-cover mini-cover ' + game.coverTheme">
+                  <div
+                    class="cover-image-layer"
+                    [style.background-image]="coverImageStyle(game)"
+                    aria-hidden="true"
+                  ></div>
+                  <span>{{ game.progress }}%</span>
+                </div>
+                <div>
+                  <p>{{ game.genre }} &middot; {{ game.platform }}</p>
+                  <h3>{{ game.title }}</h3>
+                  <small>{{ game.hoursPlayed }} ore &middot; voto {{ game.rating || 'n/d' }}</small>
+                </div>
+              </a>
+            } @empty {
+              <p class="lane-empty">Nessun gioco in questa sezione.</p>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  } @else {
+    <section class="public-empty">
+      <h2>Shelf ancora vuota.</h2>
+      <p>Questo utente non ha ancora salvato giochi nella propria MyShelf.</p>
+    </section>
+  }
+} @else if (!loaded()) {
+  <section class="public-empty">
+    <h1>Caricamento shelf...</h1>
+  </section>
+} @else {
+  <section class="public-empty">
+    <h1>Utente non trovato</h1>
+    <p>Il profilo richiesto non e disponibile nella community.</p>
+  </section>
+}

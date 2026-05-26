@@ -6,10 +6,11 @@ import { AccessControl } from '../../services/access-control';
 import { GameCatalog } from '../../services/game-catalog';
 import { NotificationCenter, NotificationTone } from '../../services/notification-center';
 import { PwaService } from '../../services/pwa';
+import { MyShelfPage } from '../my-shelf/my-shelf-page';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [FormsModule],
+  imports: [FormsModule, MyShelfPage],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.css',
 })
@@ -26,7 +27,6 @@ export class ProfilePage {
   protected readonly authReady = this.auth.authReady;
   protected readonly roleLabel = this.access.roleLabel;
   protected readonly canEditCatalog = this.access.canEditCatalog;
-  protected readonly canEditShelf = this.access.canEditShelf;
   protected readonly pwaSupported = this.pwa.supported;
   protected readonly pwaInstallable = this.pwa.installable;
   protected readonly pwaStandalone = this.pwa.standalone;
@@ -54,10 +54,25 @@ export class ProfilePage {
       .slice(0, 3)
       .map(([genre]) => genre);
   });
+  protected readonly favoriteGenreLabel = computed(() => {
+    const genres = this.favoriteGenres();
+
+    return genres.length ? genres.join(', ') : 'Da scoprire';
+  });
 
   protected readonly totalHours = computed(() =>
     this.games().reduce((total, game) => total + game.hoursPlayed, 0),
   );
+  protected readonly pwaStatusLabel = computed(() => {
+    const connection = this.pwaSupported()
+      ? this.pwaOnline()
+        ? 'online'
+        : 'offline'
+      : 'non supportata';
+    const install = this.pwaStandalone() ? 'installata' : 'browser';
+
+    return `${connection} / ${install} / notifiche ${this.notificationPermission()}`;
+  });
 
   protected updateSignInEmail(email: string): void {
     this.signInEmail.set(email);

@@ -25,6 +25,14 @@ export class PwaService {
       return;
     }
 
+    if (this.isLocalDevelopment()) {
+      this.supported.set(false);
+      this.installable.set(false);
+      this.unregisterLocalServiceWorkers();
+      this.listenForConnectionChanges();
+      return;
+    }
+
     this.registerServiceWorker();
     this.listenForInstallPrompt();
     this.listenForConnectionChanges();
@@ -50,7 +58,7 @@ export class PwaService {
   }
 
   async showReminderNotification(): Promise<boolean> {
-    if (!this.notificationsSupported()) {
+    if (!this.notificationsSupported() || !this.supported()) {
       return false;
     }
 
@@ -113,7 +121,38 @@ export class PwaService {
   }
 
   private notificationsSupported(): boolean {
-    return this.isBrowser() && 'Notification' in window && 'serviceWorker' in navigator;
+    return (
+      this.isBrowser() &&
+      this.supported() &&
+      'Notification' in window &&
+      'serviceWorker' in navigator
+    );
+  }
+
+  private unregisterLocalServiceWorkers(): void {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => void registration.unregister());
+        })
+        .catch(() => undefined);
+    }
+
+    if ('caches' in window) {
+      caches
+        .keys()
+        .then((keys) =>
+          Promise.all(
+            keys.filter((key) => key.startsWith('gameshelf-pwa-')).map((key) => caches.delete(key)),
+          ),
+        )
+        .catch(() => undefined);
+    }
+  }
+
+  private isLocalDevelopment(): boolean {
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   }
 
   private isStandalone(): boolean {

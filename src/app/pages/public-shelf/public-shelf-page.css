@@ -1,0 +1,194 @@
+.public-shelf-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 26px;
+}
+
+.public-shelf-hero h1 {
+  max-width: 10ch;
+  font-size: clamp(2.8rem, 7vw, 5.2rem);
+  line-height: 0.92;
+}
+
+.follow-button {
+  min-height: 40px;
+  margin-top: 16px;
+  padding: 0 14px;
+  border: 1px solid #151515;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #151515;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.follow-button.is-following {
+  border-color: rgba(38, 122, 113, 0.24);
+  color: #267a71;
+  background: #e7f2ef;
+}
+
+.follow-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.public-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-stats article {
+  min-height: 98px;
+  padding: 18px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #151515;
+}
+
+.public-stats article:nth-child(2) {
+  background: #267a71;
+}
+
+.public-stats article:nth-child(3) {
+  background: #b4452c;
+}
+
+.public-stats strong,
+.public-stats span {
+  display: block;
+}
+
+.public-stats strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.public-stats span {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.public-lane-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.public-lane {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(21, 21, 21, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.public-lane header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.public-lane header span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #151515;
+  font-weight: 900;
+}
+
+.public-lane-list {
+  display: grid;
+  gap: 12px;
+}
+
+.public-game-card {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: 86px minmax(0, 1fr);
+  min-height: 108px;
+  border: 1px solid rgba(21, 21, 21, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.mini-cover {
+  min-height: 108px;
+  border-radius: 0;
+}
+
+.mini-cover::after {
+  width: 88px;
+  height: 88px;
+  right: -38px;
+  bottom: -34px;
+  border-width: 16px;
+}
+
+.public-game-card div:last-child {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding: 13px;
+}
+
+.public-game-card p {
+  color: #267a71;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.public-game-card h3 {
+  font-size: 1rem;
+  line-height: 1.18;
+}
+
+.public-game-card small,
+.lane-empty,
+.public-empty p {
+  color: #5f5f5f;
+  font-weight: 800;
+}
+
+.lane-empty,
+.public-empty {
+  padding: 18px;
+  border: 1px dashed rgba(21, 21, 21, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.public-empty h1,
+.public-empty h2 {
+  font-size: 1.8rem;
+}
+
+.public-empty p {
+  margin-top: 8px;
+}
+
+@media (max-width: 1050px) {
+  .public-lane-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .public-shelf-hero,
+  .public-stats,
+  .public-lane-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-shelf-hero h1 {
+    max-width: none;
+  }
+}

@@ -7,8 +7,15 @@ import { CatalogGame } from '../../models/catalog-game';
 import { Game, GameStatus } from '../../models/game';
 import { ShelfEntry } from '../../models/shelf-entry';
 import { AccessControl } from '../../services/access-control';
-import { GameCatalog, PersistenceResult } from '../../services/game-catalog';
+import { GameCatalog } from '../../services/game-catalog';
+import type { PersistenceResult } from '../../services/game-catalog';
 import { NotificationCenter, NotificationTone } from '../../services/notification-center';
+import { coverImageStyle } from '../../utils/cover-image-style';
+import { clampNumber } from '../../utils/number-utils';
+import { notifyPersistenceResult } from '../../utils/persistence-feedback';
+import { defaultShelfEntry } from '../../utils/shelf-entry-utils';
+import { SHELF_STATUS_ORDER } from '../../utils/shelf-lanes';
+import { gameStatusLabel } from '../../utils/status-labels';
 
 @Component({
   selector: 'app-game-detail-page',
@@ -26,11 +33,12 @@ export class GameDetailPage {
     { initialValue: '' },
   );
 
-  protected readonly statuses: GameStatus[] = ['Wishlist', 'Backlog', 'In corso', 'Completato'];
+  protected readonly statuses: GameStatus[] = SHELF_STATUS_ORDER;
   protected readonly canEditShelf = this.access.canEditShelf;
   protected readonly roleLabel = this.access.roleLabel;
   protected readonly game = computed(() => this.catalog.findCatalogById(this.gameId()));
   protected readonly shelfGame = computed(() => this.catalog.findShelfById(this.gameId()));
+  protected readonly hasSavedShelfEntry = computed(() => Boolean(this.shelfGame()));
   protected readonly draftGameId = signal('');
   protected readonly draftStatus = signal<GameStatus>('Wishlist');
   protected readonly draftHoursPlayed = signal(0);
@@ -42,6 +50,12 @@ export class GameDetailPage {
   protected readonly saveMessage = signal('');
   protected readonly saveMessageTone = signal<NotificationTone>('info');
   protected readonly savingShelf = signal(false);
+  protected readonly canSaveDraft = computed(
+    () =>
+      this.canEditShelf() &&
+      !this.savingShelf() &&
+      (this.draftDirty() || !this.hasSavedShelfEntry()),
+  );
 
   constructor() {
     effect(() => {
@@ -74,7 +88,7 @@ export class GameDetailPage {
       return;
     }
 
-    this.draftProgress.set(this.clampNumber(progress, 0, 100));
+    this.draftProgress.set(clampNumber(progress, 0, 100));
     this.markDraftDirty();
   }
 
@@ -83,7 +97,7 @@ export class GameDetailPage {
       return;
     }
 
-    this.draftHoursPlayed.set(this.clampNumber(hoursPlayed, 0, 999));
+    this.draftHoursPlayed.set(clampNumber(hoursPlayed, 0, 999));
     this.markDraftDirty();
   }
 
@@ -92,7 +106,7 @@ export class GameDetailPage {
       return;
     }
 
-    this.draftRating.set(this.clampNumber(rating, 0, 5));
+    this.draftRating.set(clampNumber(rating, 0, 5));
     this.markDraftDirty();
   }
 
@@ -171,14 +185,20 @@ export class GameDetailPage {
     return rating === 0 ? 'Da valutare' : '\u2605'.repeat(rating);
   }
 
-  protected coverImageStyle(game: CatalogGame): string | null {
-    const imageUrl = game.coverImageUrl?.trim();
-
-    if (!imageUrl) {
-      return null;
+  protected saveButtonLabel(): string {
+    if (this.savingShelf()) {
+      return 'Salvataggio...';
     }
 
-    return `linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.46)), url("${imageUrl}")`;
+    return this.hasSavedShelfEntry() ? 'Salva modifiche' : 'Aggiungi a MyShelf';
+  }
+
+  protected statusLabel(status: GameStatus): string {
+    return gameStatusLabel(status);
+  }
+
+  protected coverImageStyle(game: CatalogGame): string | null {
+    return coverImageStyle(game);
   }
 
   private loadDraft(game: Game, clearMessage = true): void {
@@ -200,12 +220,7 @@ export class GameDetailPage {
   private gameWithDefaultShelf(game: CatalogGame): Game {
     return {
       ...game,
-      status: 'Wishlist',
-      rating: 0,
-      hoursPlayed: 0,
-      progress: 0,
-      notes: '',
-      personalGoal: '',
+      ...defaultShelfEntry(),
     };
   }
 
@@ -230,28 +245,10 @@ export class GameDetailPage {
     successTitle: string,
     successMessage: string,
   ): void {
-    if (persistence === 'firebase') {
-      this.notifications.success(successTitle, `${successMessage} Salvato su Firebase.`);
-      return;
-    }
-
-    if (persistence === 'fallback') {
-      this.notifications.warning(
-        'Salvataggio locale',
-        `${successMessage} Firebase non ha risposto: la copia locale e aggiornata.`,
-      );
-      return;
-    }
-
-    if (persistence === 'denied') {
-      this.notifications.error(
-        'Accesso richiesto',
-        'Accedi con un profilo per modificare la tua MyShelf.',
-      );
-      return;
-    }
-
-    this.notifications.info(successTitle, `${successMessage} Salvataggio locale attivo.`);
+    notifyPersistenceResult(this.notifications, persistence, successTitle, successMessage, {
+      deniedTitle: 'Accesso richiesto',
+      deniedMessage: 'Accedi con un profilo per modificare la tua MyShelf.',
+    });
   }
 
   private setSaveFeedback(persistence: PersistenceResult): void {
@@ -286,13 +283,4 @@ export class GameDetailPage {
     return false;
   }
 
-  private clampNumber(value: number | string, min: number, max: number): number {
-    const numericValue = Number(value);
-
-    if (Number.isNaN(numericValue)) {
-      return min;
-    }
-
-    return Math.min(max, Math.max(min, Math.round(numericValue)));
-  }
 }

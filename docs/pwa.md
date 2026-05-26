@@ -18,8 +18,8 @@ URL pubblico: `https://saw2026melaccio.web.app`.
 ## Manifest
 
 Il manifest definisce nome, descrizione, tema grafico, icone, modalita `standalone` e scorciatoie
-rapide verso `Catalogo` e `MyShelf`. Il browser puo quindi proporre l'installazione di GameShelf
-come app.
+rapide verso `Catalogo` e l'area personale `Profilo/MyShelf`. Il browser puo quindi proporre
+l'installazione di GameShelf come app.
 
 ## Service worker
 

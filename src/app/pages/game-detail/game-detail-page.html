@@ -37,7 +37,7 @@
             [class.has-unsaved-change]="draftDirty() && draftStatus() === status"
             (click)="setDraftStatus(status)"
           >
-            {{ status }}
+            {{ statusLabel(status) }}
           </button>
         }
       </div>
@@ -105,7 +105,7 @@
           (ngModelChange)="setDraftStatus($event)"
         >
           @for (status of statuses; track status) {
-            <option [value]="status">{{ status }}</option>
+            <option [value]="status">{{ statusLabel(status) }}</option>
           }
         </select>
       </label>
@@ -173,7 +173,7 @@
 
       <div class="draft-summary" aria-label="Anteprima modifiche">
         <p class="eyebrow">Anteprima bozza</p>
-        <strong>{{ draftStatus() }}</strong>
+        <strong>{{ statusLabel(draftStatus()) }}</strong>
         <span
           >{{ draftHoursPlayed() }} ore &middot; {{ draftProgress() }}% &middot;
           {{ draftRatingStars() }}</span
@@ -192,10 +192,10 @@
         <button
           type="button"
           class="save-button"
-          [disabled]="!draftDirty() || !canEditShelf() || savingShelf()"
+          [disabled]="!canSaveDraft()"
           (click)="saveShelfEntry(selectedGame)"
         >
-          {{ savingShelf() ? 'Salvataggio...' : 'Salva modifiche' }}
+          {{ saveButtonLabel() }}
         </button>
       </div>
     </div>

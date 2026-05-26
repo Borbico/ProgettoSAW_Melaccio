@@ -40,6 +40,7 @@ describe('RawgGames', () => {
   });
 
   it('reads the admin-only API key document and maps RAWG search results', async () => {
+    localStorage.setItem('gameshelf:rawg-api-key', 'stale-local-key');
     fetchMock.mockResolvedValue({
       ok: true,
       json: () =>

@@ -1,0 +1,138 @@
+<section class="community-hero" aria-labelledby="community-title">
+  <div>
+    <p class="eyebrow">Community</p>
+    <h1 id="community-title">Shelf condivise dagli utenti registrati.</h1>
+    <p>Segui i profili interessanti e costruisci una community personale da consultare.</p>
+  </div>
+
+  <div class="community-stats" aria-label="Statistiche community">
+    <article>
+      <strong>{{ totalUsers() }}</strong>
+      <span>utenti</span>
+    </article>
+    <article>
+      <strong>{{ followingCount() }}</strong>
+      <span>seguiti</span>
+    </article>
+    <article>
+      <strong>{{ followedActivePlayers() }}</strong>
+      <span>in corso</span>
+    </article>
+  </div>
+</section>
+
+@if (!loaded()) {
+  <section class="community-empty">
+    <h2>Caricamento community...</h2>
+  </section>
+} @else if (!users().length) {
+  <section class="community-empty">
+    <h2>Nessun utente visibile.</h2>
+    <p>I profili appariranno qui dopo il primo accesso.</p>
+  </section>
+} @else {
+  <section class="community-tools" aria-label="Filtri community">
+    <div class="community-tabs" aria-label="Vista community">
+      <button
+        type="button"
+        [class.is-active]="viewMode() === 'following'"
+        (click)="selectViewMode('following')"
+      >
+        Seguiti
+      </button>
+      <button
+        type="button"
+        [class.is-active]="viewMode() === 'discover'"
+        (click)="selectViewMode('discover')"
+      >
+        Scopri
+      </button>
+    </div>
+
+    <label>
+      <span>Cerca utenti o giochi</span>
+      <input
+        type="search"
+        placeholder="Nome, handle o gioco recente"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="updateSearchTerm($event)"
+      />
+    </label>
+
+    <p>{{ filteredUsers().length }} profili</p>
+  </section>
+
+  <section class="user-grid" aria-label="Utenti registrati">
+    @for (user of filteredUsers(); track user.id) {
+      <article class="user-card" [class.is-current]="currentUser()?.id === user.id">
+        <header>
+          <div>
+            <p class="eyebrow">{{ user.followed ? 'Seguito' : 'Profilo' }}</p>
+            <h2>{{ user.displayName }}</h2>
+            <span>{{ user.handle }}</span>
+          </div>
+          <div class="user-actions">
+            <button
+              type="button"
+              [class.is-following]="user.followed"
+              [disabled]="followBusyId() === user.id"
+              (click)="toggleFollow(user)"
+            >
+              {{ user.followed ? 'Seguito' : 'Segui' }}
+            </button>
+            <a [routerLink]="['/community', user.id]">Apri shelf</a>
+          </div>
+        </header>
+
+        <div class="user-metrics" aria-label="Statistiche shelf">
+          <span>{{ user.savedCount }} salvati</span>
+          <span>{{ user.activeCount }} in corso</span>
+          <span>{{ user.completedCount }} completati</span>
+          <span>{{ user.totalHours }} ore</span>
+        </div>
+
+        <section
+          class="recent-games"
+          [class.is-open]="isExpanded(user.id)"
+          aria-label="Aggiornamenti recenti"
+        >
+          <button type="button" class="recent-heading" (click)="toggleRecentGames(user.id)">
+            <strong>Ultimi progressi</strong>
+            <span>{{ formatActivity(user.lastActivityAt) }}</span>
+          </button>
+
+          @if (isExpanded(user.id)) {
+            <div class="recent-list">
+              @for (game of user.recentGames; track game.id) {
+                <a class="recent-game" [routerLink]="['/giochi', game.id]">
+                  <span>{{ game.progress }}%</span>
+                  <div>
+                    <strong>{{ game.title }}</strong>
+                    <small
+                      >{{ statusLabel(game.status) }} &middot; {{ game.hoursPlayed }} ore</small
+                    >
+                  </div>
+                </a>
+              } @empty {
+                <p class="no-progress">Nessun gioco salvato nella shelf.</p>
+              }
+            </div>
+          }
+        </section>
+      </article>
+    } @empty {
+      <div class="community-empty">
+        <h2>
+          {{ viewMode() === 'following' ? 'Nessun profilo seguito.' : 'Nessun profilo trovato.' }}
+        </h2>
+        <p>
+          {{
+            viewMode() === 'following'
+              ? 'Passa a Scopri e scegli quali profili seguire.'
+              : 'Prova con un altro nome, handle o titolo di gioco.'
+          }}
+        </p>
+      </div>
+    }
+  </section>
+}

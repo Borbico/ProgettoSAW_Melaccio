@@ -6,27 +6,18 @@
     </a>
 
     <nav class="main-nav" aria-label="Sezioni principali">
-      <a routerLink="/catalogo" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+      <a
+        routerLink="/catalogo"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
         Catalogo
       </a>
       @if (canEditShelf()) {
-        <a routerLink="/myshelf" routerLinkActive="is-active">MyShelf</a>
+        <a routerLink="/community" routerLinkActive="is-active">Community</a>
       }
       <a routerLink="/profilo" routerLinkActive="is-active">Profilo</a>
     </nav>
-
-    <div class="account-actions" aria-label="Azioni account">
-      @if (authReady()) {
-        @if (user()) {
-          <button type="button" class="account-button" (click)="quickSignOut()">Esci</button>
-        } @else {
-          <a class="account-link" routerLink="/profilo" fragment="accesso">Accedi</a>
-          <a class="account-button" routerLink="/profilo" fragment="registrati">Registrati</a>
-        }
-      } @else {
-        <span class="account-loading">Connessione</span>
-      }
-    </div>
   </header>
 
   <router-outlet />

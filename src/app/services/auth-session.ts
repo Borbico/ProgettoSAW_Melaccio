@@ -7,6 +7,7 @@ import {
   signOut,
   updateProfile,
 } from 'firebase/auth';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { UserProfile } from '../models/user-profile';
 import { FirebaseClient } from './firebase-client';
 
@@ -26,9 +27,15 @@ export class AuthSession {
 
   constructor() {
     onAuthStateChanged(this.firebase.auth, (user) => {
-      this.currentUserState.set(user ? this.toUserProfile(user) : null);
+      const profile = user ? this.toUserProfile(user) : null;
+
+      this.currentUserState.set(profile);
       this.authReadyState.set(true);
       this.resolveReady();
+
+      if (profile) {
+        void this.syncPublicProfile(profile).catch(() => undefined);
+      }
     });
   }
 
@@ -55,7 +62,10 @@ export class AuthSession {
     const cleanDisplayName = displayName.trim() || this.displayNameFromEmail(email);
 
     await updateProfile(credential.user, { displayName: cleanDisplayName });
-    this.currentUserState.set(this.toUserProfile(credential.user));
+    const profile = this.toUserProfile(credential.user);
+
+    this.currentUserState.set(profile);
+    await this.syncPublicProfile(profile).catch(() => undefined);
   }
 
   async signOut(): Promise<void> {
@@ -88,6 +98,19 @@ export class AuthSession {
 
   private handleFromEmail(email: string): string {
     return (email.split('@')[0] || 'player').replace(/[^a-z0-9-]/g, '-');
+  }
+
+  private async syncPublicProfile(profile: UserProfile): Promise<void> {
+    await setDoc(
+      doc(this.firebase.db, 'userProfiles', profile.id),
+      {
+        displayName: profile.displayName,
+        handle: profile.handle,
+        createdAt: profile.createdAt,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
   }
 
   private resolveReady(): void {

@@ -22,7 +22,8 @@ service cloud.firestore {
     }
 
     match /integrations/rawg {
-      allow read, write: if isAdmin() && validRawgIntegration();
+      allow read: if isAdmin();
+      allow write: if isAdmin() && validRawgIntegration();
     }
 
     match /userRoles/{userId} {
@@ -30,9 +31,20 @@ service cloud.firestore {
       allow write: if isAdmin() && validUserRole();
     }
 
+    match /userProfiles/{userId} {
+      allow read: if signedIn();
+      allow create, update: if (isOwner(userId) || isAdmin()) && validUserProfile();
+      allow delete: if isAdmin();
+    }
+
     match /users/{userId}/shelf/{document=**} {
-      allow read: if isOwner(userId);
+      allow read: if signedIn();
       allow write: if isOwner(userId) && validShelfDocument();
+    }
+
+    match /users/{userId}/social/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && validSocialDocument();
     }
 
     function validCatalogDocument() {
@@ -53,10 +65,104 @@ service cloud.firestore {
         && request.resource.data.role in ['admin', 'standard'];
     }
 
+    function validUserProfile() {
+      return request.resource.data.keys().hasOnly([
+          'displayName',
+          'handle',
+          'createdAt',
+          'updatedAt',
+          'shelfSummary'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.handle is string
+        && request.resource.data.handle.size() >= 2
+        && request.resource.data.handle.size() <= 80
+        && request.resource.data.createdAt is string
+        && (
+          !request.resource.data.keys().hasAny(['shelfSummary'])
+          || validShelfSummary(request.resource.data.shelfSummary)
+        );
+    }
+
+    function validShelfSummary(summary) {
+      return summary is map
+        && summary.keys().hasOnly([
+          'savedCount',
+          'activeCount',
+          'completedCount',
+          'totalHours',
+          'lastActivityAt',
+          'recentGames'
+        ])
+        && summary.savedCount is number
+        && summary.savedCount >= 0
+        && summary.savedCount <= 200
+        && summary.activeCount is number
+        && summary.activeCount >= 0
+        && summary.activeCount <= 200
+        && summary.completedCount is number
+        && summary.completedCount >= 0
+        && summary.completedCount <= 200
+        && summary.totalHours is number
+        && summary.totalHours >= 0
+        && summary.totalHours <= 99999
+        && summary.lastActivityAt is string
+        && validRecentShelfGames(summary.recentGames);
+    }
+
+    function validRecentShelfGames(games) {
+      return games is list
+        && games.size() <= 3
+        && (games.size() < 1 || validRecentShelfGame(games[0]))
+        && (games.size() < 2 || validRecentShelfGame(games[1]))
+        && (games.size() < 3 || validRecentShelfGame(games[2]));
+    }
+
+    function validRecentShelfGame(game) {
+      return game is map
+        && game.keys().hasOnly([
+          'id',
+          'title',
+          'status',
+          'rating',
+          'hoursPlayed',
+          'progress',
+          'updatedAt'
+        ])
+        && game.id is string
+        && game.id.size() >= 1
+        && game.id.size() <= 120
+        && game.title is string
+        && game.title.size() >= 1
+        && game.title.size() <= 120
+        && game.status in ['Wishlist', 'Backlog', 'In corso', 'Completato']
+        && game.rating is number
+        && game.rating >= 0
+        && game.rating <= 5
+        && game.hoursPlayed is number
+        && game.hoursPlayed >= 0
+        && game.hoursPlayed <= 999
+        && game.progress is number
+        && game.progress >= 0
+        && game.progress <= 100
+        && (
+          !game.keys().hasAny(['updatedAt'])
+          || game.updatedAt is string
+        );
+    }
+
     function validShelfDocument() {
       return request.resource.data.keys().hasOnly(['entries', 'updatedAt'])
         && request.resource.data.entries is map
         && request.resource.data.entries.keys().size() <= 200;
+    }
+
+    function validSocialDocument() {
+      return request.resource.data.keys().hasOnly(['followedUserIds', 'updatedAt'])
+        && request.resource.data.followedUserIds is list
+        && request.resource.data.followedUserIds.size() <= 500;
     }
   }
 }

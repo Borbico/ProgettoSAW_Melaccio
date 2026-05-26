@@ -31,7 +31,7 @@ export function toCatalogGame(game: Game | CatalogGame): CatalogGame {
 }
 
 export function toShelfEntry(game: Game): ShelfEntry {
-  return {
+  const entry: ShelfEntry = {
     status: game.status,
     rating: game.rating,
     hoursPlayed: game.hoursPlayed,
@@ -39,4 +39,10 @@ export function toShelfEntry(game: Game): ShelfEntry {
     notes: game.notes,
     personalGoal: game.personalGoal,
   };
+
+  if (game.updatedAt) {
+    entry.updatedAt = game.updatedAt;
+  }
+
+  return entry;
 }

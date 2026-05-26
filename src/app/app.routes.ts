@@ -21,7 +21,21 @@ export const routes: Routes = [
     path: 'myshelf',
     canActivate: [requireSignedInGuard],
     loadComponent: () =>
-      import('./pages/my-shelf/my-shelf-page').then((component) => component.MyShelfPage),
+      import('./pages/profile/profile-page').then((component) => component.ProfilePage),
+  },
+  {
+    path: 'community',
+    canActivate: [requireSignedInGuard],
+    loadComponent: () =>
+      import('./pages/community/community-page').then((component) => component.CommunityPage),
+  },
+  {
+    path: 'community/:userId',
+    canActivate: [requireSignedInGuard],
+    loadComponent: () =>
+      import('./pages/public-shelf/public-shelf-page').then(
+        (component) => component.PublicShelfPage,
+      ),
   },
   {
     path: 'profilo',

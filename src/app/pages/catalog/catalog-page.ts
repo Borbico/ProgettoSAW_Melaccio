@@ -3,8 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CatalogGame } from '../../models/catalog-game';
 import { AccessControl } from '../../services/access-control';
-import { GameCatalog, PersistenceResult } from '../../services/game-catalog';
+import { GameCatalog } from '../../services/game-catalog';
+import type { PersistenceResult } from '../../services/game-catalog';
 import { NotificationCenter, NotificationTone } from '../../services/notification-center';
+import { coverImageStyle } from '../../utils/cover-image-style';
+import { clampNumber } from '../../utils/number-utils';
+import { notifyPersistenceResult } from '../../utils/persistence-feedback';
 import {
   RawgGameSummary,
   RawgGames,
@@ -175,12 +179,11 @@ export class CatalogPage {
       }
 
       this.setRawgFeedback('success', this.rawgResultsMessage(result));
-    } catch {
-      this.setRawgFeedback('error', 'Ricerca RAWG non riuscita. Riprova tra qualche secondo.');
-      this.notifications.error(
-        'RAWG non raggiungibile',
-        'Non e stato possibile recuperare dati dalla API esterna.',
-      );
+    } catch (error) {
+      const message = this.rawgFailureMessage(error);
+
+      this.setRawgFeedback('error', message);
+      this.notifications.error('RAWG non disponibile', message);
     } finally {
       this.rawgBusy.set(false);
     }
@@ -215,12 +218,11 @@ export class CatalogPage {
       this.rawgPage.set(result.page);
       this.rawgHasMore.set(result.hasMore);
       this.setRawgFeedback('success', this.rawgResultsMessage(result));
-    } catch {
-      this.setRawgFeedback('error', 'Non e stato possibile caricare altri risultati RAWG.');
-      this.notifications.error(
-        'RAWG non raggiungibile',
-        'Non e stato possibile recuperare altri risultati dalla API esterna.',
-      );
+    } catch (error) {
+      const message = this.rawgFailureMessage(error);
+
+      this.setRawgFeedback('error', message);
+      this.notifications.error('RAWG non disponibile', message);
     } finally {
       this.rawgBusy.set(false);
       this.rawgLoadingMore.set(false);
@@ -247,12 +249,11 @@ export class CatalogPage {
         'Dati RAWG importati',
         `${importedGame.title} ha compilato la scheda. Salva per aggiungerlo al catalogo.`,
       );
-    } catch {
-      this.setRawgFeedback('error', 'Import RAWG non riuscito. Riprova tra qualche secondo.');
-      this.notifications.error(
-        'Import non riuscito',
-        `${result.title} non e stato importato da RAWG.`,
-      );
+    } catch (error) {
+      const message = this.rawgFailureMessage(error);
+
+      this.setRawgFeedback('error', message);
+      this.notifications.error('Import non riuscito', `${result.title} non e stato importato.`);
     } finally {
       this.rawgImportingId.set(null);
     }
@@ -307,13 +308,7 @@ export class CatalogPage {
   }
 
   protected coverImageStyle(item: { coverImageUrl?: string }): string | null {
-    const imageUrl = item.coverImageUrl?.trim();
-
-    if (!imageUrl) {
-      return null;
-    }
-
-    return `linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.46)), url("${imageUrl}")`;
+    return coverImageStyle(item);
   }
 
   protected async saveGame(): Promise<void> {
@@ -488,6 +483,32 @@ export class CatalogPage {
     return `${loadedResults}${total} risultati RAWG mostrati.${suffix}`;
   }
 
+  private rawgFailureMessage(error: unknown): string {
+    const message = error instanceof Error ? error.message : '';
+
+    if (message === 'RAWG_API_KEY_UNAVAILABLE') {
+      return 'Non riesco a leggere la API key RAWG da Firebase. Verifica di essere admin e riprova.';
+    }
+
+    if (message === 'RAWG_API_KEY_MISSING') {
+      return 'La API key RAWG non risulta configurata su Firebase.';
+    }
+
+    if (message === 'RAWG_NETWORK_UNAVAILABLE') {
+      return 'RAWG non e raggiungibile dalla rete in questo momento.';
+    }
+
+    if (message === 'RAWG_REQUEST_FAILED_401' || message === 'RAWG_REQUEST_FAILED_403') {
+      return 'RAWG ha rifiutato la richiesta: controlla che la API key sia ancora valida.';
+    }
+
+    if (message === 'RAWG_REQUEST_FAILED_429') {
+      return 'RAWG ha bloccato temporaneamente le richieste: limite di utilizzo raggiunto.';
+    }
+
+    return 'Ricerca RAWG non riuscita. Riprova tra qualche secondo.';
+  }
+
   private clearCatalogFeedback(): void {
     this.catalogMessage.set('');
     this.catalogMessageTone.set('info');
@@ -504,28 +525,10 @@ export class CatalogPage {
     successTitle: string,
     successMessage: string,
   ): void {
-    if (persistence === 'firebase') {
-      this.notifications.success(successTitle, `${successMessage} Salvato su Firebase.`);
-      return;
-    }
-
-    if (persistence === 'fallback') {
-      this.notifications.warning(
-        'Salvataggio locale',
-        `${successMessage} Firebase non ha risposto: la copia locale e aggiornata.`,
-      );
-      return;
-    }
-
-    if (persistence === 'denied') {
-      this.notifications.error(
-        'Permesso negato',
-        'Solo un admin puo modificare il catalogo dei giochi.',
-      );
-      return;
-    }
-
-    this.notifications.info(successTitle, `${successMessage} Salvataggio locale attivo.`);
+    notifyPersistenceResult(this.notifications, persistence, successTitle, successMessage, {
+      deniedTitle: 'Permesso negato',
+      deniedMessage: 'Solo un admin puo modificare il catalogo dei giochi.',
+    });
   }
 
   private ensureCatalogPermission(): boolean {
@@ -604,7 +607,7 @@ export class CatalogPage {
       platform: form.platform.trim(),
       modes: this.splitList(form.modes, ['Single player']),
       tags: this.splitList(form.tags),
-      releaseYear: this.clampNumber(form.releaseYear, 1970, 2035),
+      releaseYear: clampNumber(form.releaseYear, 1970, 2035),
       description: form.description.trim(),
       coverTheme: form.coverTheme,
     };
@@ -650,13 +653,4 @@ export class CatalogPage {
     return items.length ? items : fallback;
   }
 
-  private clampNumber(value: number | string, min: number, max: number): number {
-    const numericValue = Number(value);
-
-    if (Number.isNaN(numericValue)) {
-      return min;
-    }
-
-    return Math.min(max, Math.max(min, Math.round(numericValue)));
-  }
 }

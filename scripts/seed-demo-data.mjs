@@ -20,8 +20,40 @@ const firebaseConfig = {
 const demoPassword = 'GameShelfDemo2026!';
 const demoUsers = [
   {
+    email: 'admin@gameshelf.demo',
+    displayName: 'Admin GameShelf',
+    role: 'admin',
+    entries: {
+      hades: entry(
+        'In corso',
+        4,
+        31,
+        62,
+        'Account demo admin per verificare CRUD catalogo e import RAWG.',
+        'Provare modifica catalogo e salvataggio controllato.',
+      ),
+      'outer-wilds': entry(
+        'Completato',
+        5,
+        22,
+        100,
+        'Ottimo esempio di gioco esplorativo e narrativo.',
+        'Conservarlo tra i preferiti della shelf demo.',
+      ),
+      'stardew-valley': entry(
+        'In corso',
+        4,
+        44,
+        55,
+        'Sessioni brevi, utile per mostrare progressi personali.',
+        'Aggiornare ore e obiettivo dalla MyShelf.',
+      ),
+    },
+  },
+  {
     email: 'marta.platform@gameshelf.demo',
     displayName: 'Marta Platform',
+    role: 'standard',
     entries: {
       'hollow-knight': entry(
         'Completato',
@@ -117,6 +149,7 @@ const demoUsers = [
   {
     email: 'luca.rpg@gameshelf.demo',
     displayName: 'Luca RPG',
+    role: 'standard',
     entries: {
       'hollow-knight': entry(
         'Backlog',
@@ -219,6 +252,7 @@ const demoUsers = [
   {
     email: 'giulia.coop@gameshelf.demo',
     displayName: 'Giulia Coop',
+    role: 'standard',
     entries: {
       'hollow-knight': entry(
         'Wishlist',
@@ -346,26 +380,34 @@ if (adminAccessToken) {
 
 const createdUsers = [];
 
-for (const user of demoUsers) {
+for (const [userIndex, user] of demoUsers.entries()) {
   console.log(`Preparing demo user ${user.email}...`);
   const authUser = await ensureAuthUser(user.email, demoPassword, user.displayName);
+  const entries = completeEntries(user.entries, userIndex);
 
   if (adminAccessToken) {
     await writeFirestoreDocument(
+      ['userProfiles', authUser.localId],
+      publicProfile(user, authUser, userIndex, entries),
+      adminAccessToken,
+    );
+
+    await writeFirestoreDocument(
       ['userRoles', authUser.localId],
       {
-        role: 'standard',
+        role: user.role ?? 'standard',
       },
       adminAccessToken,
     );
   }
 
-  await writeUserShelf(user.email, authUser.localId, completeEntries(user.entries));
+  await writeUserShelf(user.email, authUser.localId, entries);
   console.log(`Shelf written for ${user.email}.`);
 
   createdUsers.push({
     email: user.email,
     displayName: user.displayName,
+    role: user.role ?? 'standard',
     uid: authUser.localId,
   });
 }
@@ -400,21 +442,82 @@ function entry(status, rating, hoursPlayed, progress, notes, personalGoal) {
   };
 }
 
-function completeEntries(entries) {
+function completeEntries(entries, userIndex) {
   return Object.fromEntries(
-    games.map((game) => [
-      game.id,
-      {
-        status: 'Wishlist',
-        rating: 0,
-        hoursPlayed: 0,
-        progress: 0,
-        notes: '',
-        personalGoal: '',
-        ...(entries[game.id] ?? {}),
-      },
-    ]),
+    games.map((game, gameIndex) => {
+      const savedEntry = entries[game.id] ?? {};
+      const updatedAt = new Date(
+        Date.now() - (userIndex * games.length + gameIndex) * 36 * 60 * 60 * 1000,
+      ).toISOString();
+
+      return [
+        game.id,
+        {
+          status: 'Wishlist',
+          rating: 0,
+          hoursPlayed: 0,
+          progress: 0,
+          notes: '',
+          personalGoal: '',
+          ...savedEntry,
+          updatedAt: savedEntry.updatedAt ?? updatedAt,
+        },
+      ];
+    }),
   );
+}
+
+function publicProfile(user, authUser, index, entries) {
+  return {
+    displayName: user.displayName,
+    handle: `@${user.email.split('@')[0].replace(/[^a-z0-9-]/g, '-')}`,
+    createdAt: authUser.createdAt
+      ? new Date(Number(authUser.createdAt)).toISOString()
+      : new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date().toISOString(),
+    shelfSummary: publicShelfSummary(entries),
+  };
+}
+
+function publicShelfSummary(entries) {
+  const shelfGames = catalogGames.flatMap((game) => {
+    const entry = entries[game.id];
+
+    return entry ? [{ ...game, ...entry }] : [];
+  });
+  const recentGames = [...shelfGames]
+    .sort((first, second) => updatedAtTime(second) - updatedAtTime(first))
+    .slice(0, 3)
+    .map((game) => ({
+      id: game.id,
+      title: game.title,
+      status: game.status,
+      rating: game.rating,
+      hoursPlayed: game.hoursPlayed,
+      progress: game.progress,
+      updatedAt: plainDateString(game.updatedAt),
+    }));
+
+  return {
+    savedCount: shelfGames.length,
+    activeCount: shelfGames.filter((game) => game.status === 'In corso').length,
+    completedCount: shelfGames.filter((game) => game.status === 'Completato').length,
+    totalHours: shelfGames.reduce((total, game) => total + game.hoursPlayed, 0),
+    lastActivityAt: recentGames[0]?.updatedAt ?? '',
+    recentGames,
+  };
+}
+
+function updatedAtTime(game) {
+  const time = Date.parse(game.updatedAt ?? '');
+
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function plainDateString(value) {
+  const time = Date.parse(value ?? '');
+
+  return Number.isNaN(time) ? '' : new Date(time).toUTCString();
 }
 
 function toCatalogGame(game) {

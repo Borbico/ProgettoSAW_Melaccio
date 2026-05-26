@@ -1,70 +1,64 @@
-<section class="profile-layout" aria-labelledby="profile-title">
-  <div class="profile-card">
-    <p class="eyebrow">Profilo</p>
-    <h1 id="profile-title">{{ user()?.displayName ?? 'Ospite' }}</h1>
-    <p class="handle">{{ user()?.handle ?? '@guest-player' }}</p>
-    <p class="auth-status">
-      {{
-        authReady() ? (user() ? 'Firebase Auth attivo' : 'Sessione ospite') : 'Connessione in corso'
-      }}
-    </p>
-    <p class="role-badge">{{ roleLabel() }}</p>
-    @if (user()) {
-      <p class="uid-line">
-        UID: <span>{{ user()?.id }}</span>
-      </p>
-    }
+<section class="profile-layout" aria-label="Profilo utente">
+  @if (user()) {
+    <section class="profile-summary" aria-labelledby="profile-title">
+      <div class="profile-main">
+        <div>
+          <p class="eyebrow">Profilo</p>
+          <h1 id="profile-title">{{ user()?.displayName }}</h1>
+          <p class="handle">{{ user()?.handle }}</p>
+        </div>
 
-    @if (user()) {
-      <button type="button" (click)="signOut()">Esci</button>
-    }
-  </div>
+        <div class="profile-badges" aria-label="Stato account">
+          <span>Firebase Auth</span>
+          <span>{{ roleLabel() }}</span>
+          <span>{{ canEditCatalog() ? 'Catalogo CRUD' : 'MyShelf + Community' }}</span>
+        </div>
 
-  <div class="profile-grid">
-    <article>
-      <span>{{ games().length }}</span>
-      <p>giochi salvati</p>
-    </article>
-    <article>
-      <span>{{ totalHours() }}</span>
-      <p>ore registrate</p>
-    </article>
-    <article>
-      <span>{{ favoriteGenres().join(', ') }}</span>
-      <p>generi ricorrenti</p>
-    </article>
-    <article class="permission-card">
-      <span>{{ canEditCatalog() ? 'CRUD' : canEditShelf() ? 'MyShelf' : 'Read only' }}</span>
-      <p>
-        {{
-          canEditCatalog()
-            ? 'catalogo e shelf'
-            : canEditShelf()
-              ? 'dati personali'
-              : 'solo consultazione'
-        }}
-      </p>
-    </article>
-  </div>
+        <p class="uid-line">
+          UID <span>{{ user()?.id }}</span>
+        </p>
+      </div>
 
-  <section class="pwa-panel" aria-labelledby="pwa-title">
-    <div>
-      <p class="eyebrow">PWA</p>
-      <h2 id="pwa-title">App installabile e pronta offline</h2>
-      <p>
-        Stato: {{ pwaSupported() ? (pwaOnline() ? 'online' : 'offline') : 'non supportata' }} /
-        {{ pwaStandalone() ? 'installata' : 'browser' }} / notifiche
-        {{ notificationPermission() }}
-      </p>
-    </div>
+      <div class="profile-side">
+        <div class="profile-metrics" aria-label="Statistiche profilo">
+          <article>
+            <strong>{{ games().length }}</strong>
+            <span>giochi</span>
+          </article>
+          <article>
+            <strong>{{ totalHours() }}</strong>
+            <span>ore</span>
+          </article>
+          <article class="is-genre-metric">
+            <strong>{{ favoriteGenreLabel() }}</strong>
+            <span>generi</span>
+          </article>
+        </div>
 
-    <div class="pwa-actions">
-      <button type="button" [disabled]="!pwaInstallable()" (click)="installPwa()">Installa</button>
-      <button type="button" [disabled]="!pwaSupported()" (click)="sendReminderNotification()">
-        Notifica test
-      </button>
-    </div>
-  </section>
+        <div class="profile-utilities" aria-labelledby="pwa-title">
+          <div>
+            <p class="eyebrow">PWA</p>
+            <h2 id="pwa-title">App installabile</h2>
+            <p>{{ pwaStatusLabel() }}</p>
+          </div>
+
+          <div class="profile-actions">
+            <button type="button" [disabled]="!pwaInstallable()" (click)="installPwa()">
+              Installa
+            </button>
+            <button type="button" [disabled]="!pwaSupported()" (click)="sendReminderNotification()">
+              Notifica test
+            </button>
+            <button type="button" class="logout-button" (click)="signOut()">Esci</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-shelf" aria-label="MyShelf personale">
+      <app-my-shelf-page />
+    </section>
+  }
 
   @if (authReady() && !user()) {
     <section class="auth-panel" aria-label="Accesso utente">
