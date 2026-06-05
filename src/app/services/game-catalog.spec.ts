@@ -241,6 +241,25 @@ describe('GameCatalog', () => {
     expect(persistence).toBe('denied');
     expect(catalog.findShelfById('hades')?.status).toBe('In corso');
   });
+
+  it('removes a game from the shelf', async () => {
+    expect(catalog.findShelfById('hades')).toBeDefined();
+
+    const persistence = await catalog.removeFromShelf('hades');
+
+    expect(persistence).toBe('firebase');
+    expect(catalog.findShelfById('hades')).toBeUndefined();
+    expect(shelfStorage.lastWrittenEntries['hades']).toBeUndefined();
+  });
+
+  it('denies shelf removals for guests', async () => {
+    canEditShelf.set(false);
+
+    const persistence = await catalog.removeFromShelf('hades');
+
+    expect(persistence).toBe('denied');
+    expect(catalog.findShelfById('hades')).toBeDefined();
+  });
 });
 
 function buildGame(overrides: Partial<Game> = {}): Game {

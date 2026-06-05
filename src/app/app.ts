@@ -18,6 +18,7 @@ export class App {
   protected readonly appName = 'GameShelf';
   protected readonly canEditShelf = this.access.canEditShelf;
   protected readonly notifications = this.notificationCenter.notifications;
+  protected readonly online = this.pwa.online;
 
   protected dismissNotification(id: number): void {
     this.notificationCenter.dismiss(id);

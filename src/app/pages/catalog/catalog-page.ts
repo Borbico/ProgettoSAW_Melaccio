@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CatalogGame } from '../../models/catalog-game';
+import { GameStatus } from '../../models/game';
 import { AccessControl } from '../../services/access-control';
 import { GameCatalog } from '../../services/game-catalog';
 import type { PersistenceResult } from '../../services/game-catalog';
@@ -9,6 +10,7 @@ import { NotificationCenter, NotificationTone } from '../../services/notificatio
 import { coverImageStyle } from '../../utils/cover-image-style';
 import { clampNumber } from '../../utils/number-utils';
 import { notifyPersistenceResult } from '../../utils/persistence-feedback';
+import { gameStatusGroupLabel } from '../../utils/status-labels';
 import {
   RawgGameSummary,
   RawgGames,
@@ -50,6 +52,7 @@ export class CatalogPage {
   protected readonly searchTerm = signal('');
   protected readonly selectedGenre = signal('Tutti');
   protected readonly selectedPlatform = signal('Tutte');
+  protected readonly sortBy = signal('title-asc');
   protected readonly editorMode = signal<CatalogEditorMode>('closed');
   protected readonly editingGameId = signal<string | null>(null);
   protected readonly deleteCandidateId = signal<string | null>(null);
@@ -67,9 +70,18 @@ export class CatalogPage {
   protected readonly rawgImportingId = signal<number | null>(null);
   protected readonly rawgPage = signal(1);
   protected readonly rawgHasMore = signal(false);
+  protected readonly shelfBusyGameId = signal('');
 
   protected readonly canEditCatalog = this.access.canEditCatalog;
   protected readonly roleLabel = this.access.roleLabel;
+  protected readonly canEditShelf = this.access.canEditShelf;
+  protected readonly shelfStatusMap = computed(() => {
+    const map: Record<string, GameStatus | undefined> = {};
+    for (const game of this.catalog.shelfGames()) {
+      map[game.id] = game.status;
+    }
+    return map;
+  });
   protected readonly games = this.catalog.games;
   protected readonly genres = computed(() => this.uniqueValues('genre'));
   protected readonly platforms = computed(() => this.uniqueValues('platform'));
@@ -90,8 +102,9 @@ export class CatalogPage {
     const term = this.searchTerm().trim().toLowerCase();
     const genre = this.selectedGenre();
     const platform = this.selectedPlatform();
+    const sort = this.sortBy();
 
-    return this.games().filter((game) => {
+    const result = this.games().filter((game) => {
       const matchesSearch =
         !term ||
         game.title.toLowerCase().includes(term) ||
@@ -101,6 +114,22 @@ export class CatalogPage {
       const matchesPlatform = platform === 'Tutte' || game.platform === platform;
 
       return matchesSearch && matchesGenre && matchesPlatform;
+    });
+
+    return result.sort((first, second) => {
+      if (sort === 'title-asc') {
+        return first.title.localeCompare(second.title);
+      }
+      if (sort === 'title-desc') {
+        return second.title.localeCompare(first.title);
+      }
+      if (sort === 'year-desc') {
+        return second.releaseYear - first.releaseYear || first.title.localeCompare(second.title);
+      }
+      if (sort === 'year-asc') {
+        return first.releaseYear - second.releaseYear || first.title.localeCompare(second.title);
+      }
+      return 0;
     });
   });
 
@@ -128,6 +157,11 @@ export class CatalogPage {
     this.searchTerm.set('');
     this.selectedGenre.set('Tutti');
     this.selectedPlatform.set('Tutte');
+    this.sortBy.set('title-asc');
+  }
+
+  protected updateSortBy(sort: string): void {
+    this.sortBy.set(sort);
   }
 
   protected updateRawgQuery(query: string): void {
@@ -653,4 +687,48 @@ export class CatalogPage {
     return items.length ? items : fallback;
   }
 
+  protected async updateShelfStatus(
+    game: CatalogGame,
+    status: GameStatus | 'remove' | '',
+  ): Promise<void> {
+    if (!status) {
+      return;
+    }
+
+    if (!this.canEditShelf()) {
+      this.notifications.warning(
+        'Accesso richiesto',
+        'Accedi con un profilo per modificare la tua MyShelf.',
+      );
+      return;
+    }
+
+    if (this.shelfBusyGameId()) {
+      return;
+    }
+
+    this.shelfBusyGameId.set(game.id);
+
+    try {
+      if (status === 'remove') {
+        const persistence = await this.catalog.removeFromShelf(game.id);
+        this.notifyPersistence(
+          persistence,
+          'Rimosso da MyShelf',
+          `${game.title} è stato rimosso dalla tua MyShelf.`,
+        );
+      } else {
+        const persistence = await this.catalog.updateShelfEntry(game.id, { status });
+        this.notifyPersistence(
+          persistence,
+          'MyShelf aggiornata',
+          `${game.title} è stato spostato in ${gameStatusGroupLabel(status)}.`,
+        );
+      }
+    } catch {
+      this.notifications.error('Errore', 'Impossibile aggiornare la tua MyShelf.');
+    } finally {
+      this.shelfBusyGameId.set('');
+    }
+  }
 }

@@ -152,6 +152,19 @@ export class GameCatalog {
     return this.persistCurrentShelf();
   }
 
+  removeFromShelf(gameId: string): Promise<PersistenceResult> {
+    if (!this.access.canEditShelf()) {
+      return Promise.resolve('denied');
+    }
+
+    this.shelfEntriesState.update((entries) => {
+      const { [gameId]: _deletedEntry, ...remainingEntries } = entries;
+      return remainingEntries;
+    });
+
+    return this.persistCurrentShelf();
+  }
+
   private async persistCatalog(): Promise<PersistenceResult> {
     try {
       await this.catalogStorage.write(this.catalogGamesState());

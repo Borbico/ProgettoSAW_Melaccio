@@ -1,9 +1,16 @@
 <main class="app-shell">
   <header class="topbar">
-    <a class="brand" routerLink="/catalogo" aria-label="GameShelf home">
-      <span class="brand-mark">GS</span>
-      <span>{{ appName }}</span>
-    </a>
+    <div class="brand-wrapper">
+      <a class="brand" routerLink="/catalogo" aria-label="GameShelf home">
+        <span class="brand-mark">GS</span>
+        <span>{{ appName }}</span>
+      </a>
+      @if (!online()) {
+        <span class="offline-badge" title="Sei offline. Alcune funzionalità potrebbero non essere disponibili.">
+          Offline
+        </span>
+      }
+    </div>
 
     <nav class="main-nav" aria-label="Sezioni principali">
       <a
