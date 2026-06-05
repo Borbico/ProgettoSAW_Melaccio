@@ -14,10 +14,10 @@ Fonte principale: slide `SAW26_01_-_Introduzione.pdf`, pagine 7-9 e 38.
 | Uso di Firestore | Coperto | Catalogo, shelf personali, profili pubblici, ruoli e configurazione RAWG | Le regole limitano letture e scritture in base al ruolo. |
 | Web app installabile come PWA | Coperto | `manifest.webmanifest`, icone, `PwaService`, install prompt | Documentata in `docs/pwa.md`. |
 | Offline e/o pagina offline di fallback | Coperto | `service-worker.js` con cache app shell e `offline.html` | Firebase e RAWG restano online-first perche dipendono da dati dinamici. |
-| Notifiche, iOS escluso | Coperto | Notifica di test dal profilo tramite service worker | Da provare sul deploy HTTPS prima della consegna finale. |
-| Codice su repository pubblico versionato | Da completare | Repository Git locale presente | Inserire nel README il link GitHub pubblico definitivo. |
+| Notifiche, iOS escluso | Coperto | Notifica di test dal profilo tramite service worker | Funzionalita disponibile sul deploy HTTPS. |
+| Codice su repository pubblico versionato | Coperto | Repository GitHub pubblico: `https://github.com/Borbico/ProgettoSAW_Melaccio` | Ultimo commit locale allineato a `origin/master`. |
 | README con istruzioni e informazioni necessarie | Coperto | README con demo, requisiti, ruoli, setup, Firebase, RAWG, PWA, test e deploy | Da mantenere aggiornato prima della consegna. |
-| Credenziali utente di test nel README | Coperto | README e `scripts/seed-demo-data.mjs` includono account demo standard e admin | Prima della consegna eseguire il seed admin sul progetto Firebase pubblico. |
+| Credenziali utente di test nel README | Coperto | README e `scripts/seed-demo-data.mjs` includono account demo standard e admin | Seed admin gia eseguito su Firebase: account demo, profili, ruoli e catalogo sincronizzati. |
 | Consegna via mail con link repository | Da fare alla fine | Non riguarda il codice | Oggetto richiesto: `[SAW] Consegna progetto <DataAppello> <Nome> <Cognome> <Matricola>`. |
 
 ## Requisiti tecnici dimostrabili
@@ -34,15 +34,12 @@ Fonte principale: slide `SAW26_01_-_Introduzione.pdf`, pagine 7-9 e 38.
 | Feedback utente | Coperto | Toast/notifiche per salvataggi, errori RAWG/Firebase, permessi e PWA. |
 | Test automatici | Coperto | Test su auth guards, catalogo, community e RAWG | Ultima verifica: `npm test` passato con 17 test. |
 | Build produzione | Coperto | `npm run build` passato | Rimane solo warning budget iniziale, non bloccante. |
-| Lighthouse PWA | Coperto | Report documentato in `docs/pwa.md` | Ripetere dopo deploy finale allineato. |
-| Firebase Hosting | Coperto, da riallineare | URL pubblico `https://saw2026melaccio.web.app` | Fare deploy finale dopo README e ultime rifiniture. |
+| Lighthouse PWA | Coperto | Report documentato in `docs/pwa.md` | Facoltativo: ripetere un audit finale dopo l'ultimo deploy per avere un dato aggiornato. |
+| Firebase Hosting | Coperto | URL pubblico `https://saw2026melaccio.web.app` | Deploy finale completato e URL verificato online. |
 
 ## Cose da fare prima della consegna
 
-- Verificare che README e documenti siano aggiornati all'ultima versione dell'app.
-- Verificare che il deploy Firebase Hosting sia allineato all'ultima versione locale.
-- Eseguire il seed demo admin se si vogliono garantire account demo completi nel database pubblico.
-- Eseguire `npm test` e `npm run build` come verifica finale.
-- Ripetere Lighthouse sull'URL pubblico dopo il deploy finale.
-- Fare un ultimo controllo manuale responsive su desktop e mobile.
+- Valutare se chiudere o discutere con il professore l'alert GitHub sulla Firebase Web API key.
+- Ripetere Lighthouse sull'URL pubblico se si vuole allegare o citare un risultato aggiornato.
+- Fare un ultimo controllo manuale responsive su desktop e mobile prima dell'invio.
 - Preparare la mail di consegna con oggetto e contenuto richiesti dalle slide.
