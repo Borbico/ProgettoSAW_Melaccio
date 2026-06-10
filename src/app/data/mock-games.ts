@@ -87,7 +87,7 @@ export const MOCK_GAMES: Game[] = [
     hoursPlayed: 0,
     progress: 0,
     description:
-      "Outer Wilds is an open world mystery about a solar system trapped in an endless time loop. You are the newest recruit of Outer Wilds Ventures, a fledgling space program searching for answers in a strange, constantly evolving solar system.",
+      'Outer Wilds is an open world mystery about a solar system trapped in an endless time loop. You are the newest recruit of Outer Wilds Ventures, a fledgling space program searching for answers in a strange, constantly evolving solar system.',
     notes: 'Da iniziare quando posso giocarlo con calma, senza spoiler e con sessioni lunghe.',
     personalGoal: 'Aggiungerlo alla rotazione dopo aver finito Hades.',
     coverTheme: 'cover-orbit',

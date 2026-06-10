@@ -5,7 +5,7 @@ import { AuthSession } from './auth-session';
 import { FirebaseClient } from './firebase-client';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AccessControl {
   private readonly auth = inject(AuthSession);
@@ -37,7 +37,7 @@ export class AccessControl {
         },
         () => {
           untracked(() => this.roleState.set('standard'));
-        }
+        },
       );
 
       onCleanup(() => unsubscribe());

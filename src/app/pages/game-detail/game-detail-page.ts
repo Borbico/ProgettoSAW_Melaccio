@@ -282,5 +282,4 @@ export class GameDetailPage {
 
     return false;
   }
-
 }

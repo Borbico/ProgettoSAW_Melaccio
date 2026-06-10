@@ -10,7 +10,7 @@ export interface AppNotification {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NotificationCenter {
   private readonly notificationState = signal<AppNotification[]>([]);
@@ -36,21 +36,16 @@ export class NotificationCenter {
 
   dismiss(id: number): void {
     this.notificationState.update((notifications) =>
-      notifications.filter((notification) => notification.id !== id)
+      notifications.filter((notification) => notification.id !== id),
     );
   }
 
-  private show(
-    tone: NotificationTone,
-    title: string,
-    message: string,
-    timeoutMs = 5000
-  ): void {
+  private show(tone: NotificationTone, title: string, message: string, timeoutMs = 5000): void {
     const notification: AppNotification = {
       id: this.nextId,
       tone,
       title,
-      message
+      message,
     };
 
     this.nextId += 1;

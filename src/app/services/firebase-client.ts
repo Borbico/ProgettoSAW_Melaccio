@@ -5,7 +5,7 @@ import { Firestore, getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from '../firebase/firebase-config';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FirebaseClient {
   readonly app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);

@@ -7,5 +7,5 @@ export const firebaseConfig: FirebaseOptions = {
   storageBucket: 'saw2026melaccio.firebasestorage.app',
   messagingSenderId: '289950510856',
   appId: '1:289950510856:web:3269f2b69228708a6b06bd',
-  measurementId: 'G-NT260XHSQD'
+  measurementId: 'G-NT260XHSQD',
 };

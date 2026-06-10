@@ -248,9 +248,7 @@ export class CommunityShelf {
     const activeIds = new Set(userIds);
 
     this.entriesByUserState.update((entriesByUser) =>
-      Object.fromEntries(
-        Object.entries(entriesByUser).filter(([userId]) => activeIds.has(userId)),
-      ),
+      Object.fromEntries(Object.entries(entriesByUser).filter(([userId]) => activeIds.has(userId))),
     );
   }
 

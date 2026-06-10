@@ -149,9 +149,9 @@ describe('GameCatalog', () => {
     expect(shelfStorage.lastWrittenEntries['hades']?.hoursPlayed).toBe(
       originalShelfGame.hoursPlayed,
     );
-    expect(shelfStorage.lastWrittenSummary?.recentGames.some((game) => game.title === 'Hades II')).toBe(
-      true,
-    );
+    expect(
+      shelfStorage.lastWrittenSummary?.recentGames.some((game) => game.title === 'Hades II'),
+    ).toBe(true);
   });
 
   it('deletes a game from catalog and shelf persistence', async () => {
