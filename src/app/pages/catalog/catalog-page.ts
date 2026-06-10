@@ -714,25 +714,62 @@ export class CatalogPage {
     this.shelfBusyGameId.set(game.id);
 
     try {
+      const previousStatus = this.shelfStatusMap()[game.id];
+
       if (status === 'remove') {
         const persistence = await this.catalog.removeFromShelf(game.id);
-        this.notifyPersistence(
-          persistence,
-          'Rimosso da MyShelf',
-          `${game.title} è stato rimosso dalla tua MyShelf.`,
-        );
+        const message = `${game.title} e stato rimosso dalla tua MyShelf.`;
+
+        this.setShelfCatalogFeedback(persistence, `${game.title} rimosso da MyShelf.`);
+        this.notifyShelfPersistence(persistence, 'Rimosso da MyShelf', message);
       } else {
         const persistence = await this.catalog.updateShelfEntry(game.id, { status });
-        this.notifyPersistence(
+        const shelfGroup = gameStatusGroupLabel(status);
+        const title = previousStatus ? 'MyShelf aggiornata' : 'Aggiunto a MyShelf';
+        const message = previousStatus
+          ? `${game.title} e stato spostato in ${shelfGroup}.`
+          : `${game.title} e stato aggiunto in ${shelfGroup}. Apri MyShelf o la scheda gioco per completare ore, voto e note.`;
+
+        this.setShelfCatalogFeedback(
           persistence,
-          'MyShelf aggiornata',
-          `${game.title} è stato spostato in ${gameStatusGroupLabel(status)}.`,
+          previousStatus
+            ? `${game.title} spostato in ${shelfGroup}.`
+            : `${game.title} aggiunto a MyShelf in ${shelfGroup}.`,
         );
+        this.notifyShelfPersistence(persistence, title, message);
       }
     } catch {
       this.notifications.error('Errore', 'Impossibile aggiornare la tua MyShelf.');
     } finally {
       this.shelfBusyGameId.set('');
     }
+  }
+
+  private notifyShelfPersistence(
+    persistence: PersistenceResult,
+    successTitle: string,
+    successMessage: string,
+  ): void {
+    notifyPersistenceResult(this.notifications, persistence, successTitle, successMessage, {
+      deniedTitle: 'Accesso richiesto',
+      deniedMessage: 'Accedi con un profilo per modificare la tua MyShelf.',
+      fallbackTitle: 'Modifica in attesa di sync',
+      fallbackMessage: `${successMessage} Salvata sul dispositivo: verra sincronizzata appena Firebase torna disponibile.`,
+      localMessage: `${successMessage} Salvata in locale.`,
+    });
+  }
+
+  private setShelfCatalogFeedback(persistence: PersistenceResult, successMessage: string): void {
+    if (persistence === 'fallback') {
+      this.setCatalogFeedback('warning', `${successMessage} Sync in attesa.`);
+      return;
+    }
+
+    if (persistence === 'denied') {
+      this.setCatalogFeedback('error', 'Accedi per modificare la tua MyShelf.');
+      return;
+    }
+
+    this.setCatalogFeedback('success', successMessage);
   }
 }

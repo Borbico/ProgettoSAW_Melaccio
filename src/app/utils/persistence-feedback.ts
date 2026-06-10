@@ -4,6 +4,9 @@ import type { NotificationCenter } from '../services/notification-center';
 interface PersistenceFeedbackOptions {
   deniedTitle: string;
   deniedMessage: string;
+  fallbackTitle?: string;
+  fallbackMessage?: string;
+  localMessage?: string;
 }
 
 export function notifyPersistenceResult(
@@ -20,8 +23,9 @@ export function notifyPersistenceResult(
 
   if (persistence === 'fallback') {
     notifications.warning(
-      'Salvataggio locale',
-      `${successMessage} Firebase non ha risposto: la copia locale e aggiornata.`,
+      options.fallbackTitle ?? 'Salvataggio locale',
+      options.fallbackMessage ??
+        `${successMessage} Firebase non ha risposto: la copia locale e aggiornata.`,
     );
     return;
   }
@@ -31,5 +35,8 @@ export function notifyPersistenceResult(
     return;
   }
 
-  notifications.info(successTitle, `${successMessage} Salvataggio locale attivo.`);
+  notifications.info(
+    successTitle,
+    options.localMessage ?? `${successMessage} Salvataggio locale attivo.`,
+  );
 }

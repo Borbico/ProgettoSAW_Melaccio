@@ -13,6 +13,14 @@
           Offline
         </span>
       }
+      @if (pendingSyncCount() > 0) {
+        <span
+          class="sync-badge"
+          title="Ci sono modifiche personali salvate sul dispositivo e in attesa di Firebase."
+        >
+          {{ pendingSyncLabel() }}
+        </span>
+      }
     </div>
 
     <nav class="main-nav" aria-label="Sezioni principali">

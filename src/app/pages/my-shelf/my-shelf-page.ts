@@ -78,6 +78,9 @@ export class MyShelfPage {
     notifyPersistenceResult(this.notifications, persistence, successTitle, successMessage, {
       deniedTitle: 'Accesso richiesto',
       deniedMessage: 'Accedi con un profilo per modificare la tua MyShelf.',
+      fallbackTitle: 'Modifica in attesa di sync',
+      fallbackMessage: `${successMessage} Salvata sul dispositivo: verra sincronizzata appena Firebase torna disponibile.`,
+      localMessage: `${successMessage} Salvata in locale.`,
     });
   }
 }

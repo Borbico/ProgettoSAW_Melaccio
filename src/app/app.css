@@ -149,7 +149,8 @@
   gap: 12px;
 }
 
-.offline-badge {
+.offline-badge,
+.sync-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -158,9 +159,17 @@
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.offline-badge {
   color: #ffffff;
   background: #b4452c;
   animation: offline-pulse 2s infinite;
+}
+
+.sync-badge {
+  color: #151515;
+  background: #f4b942;
 }
 
 @keyframes offline-pulse {
@@ -176,7 +185,8 @@
 }
 
 @media (max-width: 640px) {
-  .offline-badge {
+  .offline-badge,
+  .sync-badge {
     padding: 4px 8px;
     font-size: 0.65rem;
   }

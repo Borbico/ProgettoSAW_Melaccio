@@ -30,12 +30,15 @@ export class GameCatalog {
   private readonly guestUserId = 'guest';
   private readonly catalogGamesState = signal<CatalogGame[]>([]);
   private readonly shelfEntriesState = signal<Record<string, ShelfEntry>>({});
+  private readonly pendingSyncCountState = signal(0);
 
   readonly catalogGames = this.catalogGamesState.asReadonly();
   readonly shelfGames = computed(() =>
     composeShelfGames(this.catalogGamesState(), this.shelfEntriesState()),
   );
   readonly games = this.catalogGames;
+  readonly pendingSyncCount = this.pendingSyncCountState.asReadonly();
+  readonly hasPendingSync = computed(() => this.pendingSyncCountState() > 0);
 
   constructor() {
     const unsubscribeCatalog: Unsubscribe = this.catalogStorage.watch((catalogGames) => {
@@ -69,6 +72,11 @@ export class GameCatalog {
           void this.syncOfflineChanges(currentUser.id);
         });
       }
+    });
+
+    effect(() => {
+      const userId = this.auth.currentUser()?.id ?? this.guestUserId;
+      untracked(() => this.refreshPendingSyncCount(userId));
     });
   }
 
@@ -183,6 +191,8 @@ export class GameCatalog {
         this.shelfStorage.clearPendingChange(userId, gameId);
       }
 
+      this.refreshPendingSyncCount(userId);
+
       if (isTransitioningToCompleted) {
         try {
           const activityRef = doc(collection(this.firebase.db, 'activities'));
@@ -222,6 +232,8 @@ export class GameCatalog {
       } else if (persistence === 'firebase') {
         this.shelfStorage.clearPendingChange(userId, gameId);
       }
+
+      this.refreshPendingSyncCount(userId);
     }
 
     return persistence;
@@ -229,18 +241,34 @@ export class GameCatalog {
 
   private async syncOfflineChanges(userId: string): Promise<void> {
     const pending = this.shelfStorage.readPendingChanges(userId);
-    if (Object.keys(pending).length === 0) {
+    const pendingCount = Object.keys(pending).length;
+
+    this.pendingSyncCountState.set(pendingCount);
+
+    if (pendingCount === 0) {
       return;
     }
 
     const persistence = await this.persistCurrentShelf();
     if (persistence === 'firebase') {
       this.shelfStorage.clearPendingChanges(userId);
+      this.refreshPendingSyncCount(userId);
       this.notifications.success(
         'Sincronizzazione completata',
-        'Le modifiche apportate offline sono state salvate nel cloud.'
+        'Le modifiche in attesa sono state salvate su Firebase.',
       );
     }
+  }
+
+  private refreshPendingSyncCount(userId: string): void {
+    if (userId === this.guestUserId) {
+      this.pendingSyncCountState.set(0);
+      return;
+    }
+
+    this.pendingSyncCountState.set(
+      Object.keys(this.shelfStorage.readPendingChanges(userId)).length,
+    );
   }
 
   private async persistCatalog(): Promise<PersistenceResult> {

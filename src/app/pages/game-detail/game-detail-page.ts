@@ -248,6 +248,9 @@ export class GameDetailPage {
     notifyPersistenceResult(this.notifications, persistence, successTitle, successMessage, {
       deniedTitle: 'Accesso richiesto',
       deniedMessage: 'Accedi con un profilo per modificare la tua MyShelf.',
+      fallbackTitle: 'Modifica in attesa di sync',
+      fallbackMessage: `${successMessage} Salvata sul dispositivo: verra sincronizzata appena Firebase torna disponibile.`,
+      localMessage: `${successMessage} Salvata in locale.`,
     });
   }
 
@@ -260,7 +263,7 @@ export class GameDetailPage {
 
     if (persistence === 'fallback') {
       this.saveMessageTone.set('warning');
-      this.saveMessage.set('Firebase non ha risposto: copia locale aggiornata.');
+      this.saveMessage.set('Salvata sul dispositivo. Sync in attesa di Firebase.');
       return;
     }
 

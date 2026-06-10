@@ -320,6 +320,8 @@ describe('GameCatalog', () => {
     const pending = shelfStorage.readPendingChanges('admin-user');
     expect(pending['hades']).toBeDefined();
     expect(pending['hades']?.hoursPlayed).toBe(99);
+    expect(catalog.pendingSyncCount()).toBe(1);
+    expect(catalog.hasPendingSync()).toBe(true);
 
     // 2. Simulate going online: triggers sync effect
     shelfStorage.shouldFail = false;
@@ -332,6 +334,8 @@ describe('GameCatalog', () => {
     // The sync should run and clear the pending queue
     const pendingAfterSync = shelfStorage.readPendingChanges('admin-user');
     expect(pendingAfterSync['hades']).toBeUndefined();
+    expect(catalog.pendingSyncCount()).toBe(0);
+    expect(catalog.hasPendingSync()).toBe(false);
     expect(shelfStorage.lastWrittenEntries['hades']?.hoursPlayed).toBe(99);
   });
 });
