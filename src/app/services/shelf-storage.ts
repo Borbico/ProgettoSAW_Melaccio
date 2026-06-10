@@ -65,7 +65,11 @@ export class ShelfStorage {
   private writePendingChanges(userId: string, pending: Record<string, ShelfEntry | null>): void {
     const key = `gameshelf:pending_sync:${userId}`;
     if (this.hasStorage()) {
-      localStorage.setItem(key, JSON.stringify(pending));
+      try {
+        localStorage.setItem(key, JSON.stringify(pending));
+      } catch (err) {
+        console.error('Failed to write pending changes to localStorage', err);
+      }
     }
   }
 
@@ -153,7 +157,11 @@ export class ShelfStorage {
 
   private writeLocal(userId: string, entries: Record<string, ShelfEntry>): void {
     if (this.hasStorage()) {
-      localStorage.setItem(this.storageKey(userId), JSON.stringify(entries));
+      try {
+        localStorage.setItem(this.storageKey(userId), JSON.stringify(entries));
+      } catch (err) {
+        console.error('Failed to write shelf entries to localStorage', err);
+      }
     }
   }
 
