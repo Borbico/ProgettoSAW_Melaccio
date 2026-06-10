@@ -49,7 +49,7 @@
       <button
         class="primary-button"
         type="button"
-        [disabled]="catalogBusy()"
+        [disabled]="catalogBusy() || !pwaOnline()"
         (click)="startCreate()"
       >
         Nuovo gioco
@@ -91,6 +91,11 @@
 
     @if (editorOpen()) {
       <section class="catalog-editor" aria-labelledby="catalog-editor-title">
+        @if (!pwaOnline()) {
+          <p class="catalog-message is-warning" style="margin-bottom: 16px;">
+            Sei offline. La gestione del catalogo è disabilitata.
+          </p>
+        }
         <div class="editor-heading">
           <div>
             <p class="eyebrow">Gestione catalogo</p>
@@ -109,7 +114,7 @@
             <button
               class="save-button"
               type="button"
-              [disabled]="catalogBusy()"
+              [disabled]="catalogBusy() || !pwaOnline()"
               (click)="saveGame()"
             >
               {{ catalogBusy() ? 'Salvataggio...' : 'Salva' }}
@@ -128,9 +133,10 @@
           <button
             type="button"
             [class.is-active]="inputMode() === 'rawg'"
+            [disabled]="!pwaOnline()"
             (click)="selectInputMode('rawg')"
           >
-            Da RAWG
+            Da RAWG {{ !pwaOnline() ? '(Solo online)' : '' }}
           </button>
         </div>
 
@@ -342,7 +348,7 @@
             <button
               class="save-button"
               type="button"
-              [disabled]="catalogBusy()"
+              [disabled]="catalogBusy() || !pwaOnline()"
               (click)="saveGame()"
             >
               {{ catalogBusy() ? 'Salvataggio...' : 'Salva' }}
@@ -429,7 +435,7 @@
                 <button
                   class="danger-button"
                   type="button"
-                  [disabled]="catalogBusy()"
+                  [disabled]="catalogBusy() || !pwaOnline()"
                   (click)="deleteGame(game)"
                 >
                   {{ catalogBusy() ? 'Elimino...' : 'Conferma' }}
@@ -446,7 +452,7 @@
                 <button
                   class="secondary-button compact"
                   type="button"
-                  [disabled]="catalogBusy()"
+                  [disabled]="catalogBusy() || !pwaOnline()"
                   (click)="startEdit(game)"
                 >
                   Modifica
@@ -454,7 +460,7 @@
                 <button
                   class="danger-ghost-button"
                   type="button"
-                  [disabled]="catalogBusy()"
+                  [disabled]="catalogBusy() || !pwaOnline()"
                   (click)="requestDelete(game)"
                 >
                   Elimina

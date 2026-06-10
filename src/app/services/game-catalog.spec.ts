@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { MOCK_GAMES } from '../data/mock-games';
 import { CatalogGame, toCatalogGame, toShelfEntry } from '../models/catalog-game';
 import { Game } from '../models/game';
@@ -10,6 +11,18 @@ import { AuthSession } from './auth-session';
 import { CatalogStorage } from './catalog-storage';
 import { GameCatalog } from './game-catalog';
 import { ShelfStorage } from './shelf-storage';
+import { PwaService } from './pwa';
+import { FirebaseClient } from './firebase-client';
+
+const firestore = vi.hoisted(() => ({
+  collection: vi.fn((_db: unknown, ...segments: string[]) => ({ kind: 'collection', segments })),
+  doc: vi.fn((_db: unknown, ...segments: string[]) => ({ kind: 'doc', segments })),
+  setDoc: vi.fn(() => Promise.resolve()),
+  serverTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
+  getFirestore: vi.fn(() => ({})),
+}));
+
+vi.mock('firebase/firestore', () => firestore);
 
 class FakeCatalogStorage {
   lastWrittenGames: CatalogGame[] = [];
@@ -30,6 +43,8 @@ class FakeShelfStorage {
   lastWrittenEntries: Record<string, ShelfEntry> = {};
   lastWrittenSummary: PublicShelfSummary | undefined;
   private entries = Object.fromEntries(MOCK_GAMES.map((game) => [game.id, toShelfEntry(game)]));
+  shouldFail = false;
+  pendingChanges: Record<string, Record<string, ShelfEntry | null>> = {};
 
   setEntries(entries: Record<string, ShelfEntry>): void {
     this.entries = entries;
@@ -45,9 +60,33 @@ class FakeShelfStorage {
     entries: Record<string, ShelfEntry>,
     publicSummary?: PublicShelfSummary,
   ): Promise<void> {
+    if (this.shouldFail) {
+      throw new Error('Offline');
+    }
     this.entries = entries;
     this.lastWrittenEntries = entries;
     this.lastWrittenSummary = publicSummary;
+  }
+
+  markPendingChange(userId: string, gameId: string, entry: ShelfEntry | null): void {
+    if (!this.pendingChanges[userId]) {
+      this.pendingChanges[userId] = {};
+    }
+    this.pendingChanges[userId][gameId] = entry;
+  }
+
+  clearPendingChange(userId: string, gameId: string): void {
+    if (this.pendingChanges[userId]) {
+      delete this.pendingChanges[userId][gameId];
+    }
+  }
+
+  readPendingChanges(userId: string): Record<string, ShelfEntry | null> {
+    return this.pendingChanges[userId] ?? {};
+  }
+
+  clearPendingChanges(userId: string): void {
+    delete this.pendingChanges[userId];
   }
 }
 
@@ -57,11 +96,13 @@ describe('GameCatalog', () => {
   let shelfStorage: FakeShelfStorage;
   let canEditCatalog = signal(true);
   let canEditShelf = signal(true);
+  let isOnline = signal(true);
 
   beforeEach(() => {
     const currentUser = signal({ id: 'admin-user' });
     canEditCatalog = signal(true);
     canEditShelf = signal(true);
+    isOnline = signal(true);
 
     catalogStorage = new FakeCatalogStorage();
     shelfStorage = new FakeShelfStorage();
@@ -79,6 +120,8 @@ describe('GameCatalog', () => {
         { provide: AuthSession, useValue: { currentUser: currentUser.asReadonly() } },
         { provide: CatalogStorage, useValue: catalogStorage },
         { provide: ShelfStorage, useValue: shelfStorage },
+        { provide: PwaService, useValue: { online: isOnline.asReadonly() } },
+        { provide: FirebaseClient, useValue: { db: {} } },
       ],
     });
 
@@ -259,6 +302,37 @@ describe('GameCatalog', () => {
 
     expect(persistence).toBe('denied');
     expect(catalog.findShelfById('hades')).toBeDefined();
+  });
+
+  it('queues pending changes on write failure and syncs when back online', async () => {
+    // 1. Simulate offline: writing to shelf fails
+    isOnline.set(false);
+    TestBed.flushEffects();
+    shelfStorage.shouldFail = true;
+
+    const persistence = await catalog.updateShelfEntry('hades', {
+      status: 'Completato',
+      hoursPlayed: 99,
+    });
+
+    expect(persistence).toBe('fallback');
+    // Change should be queued in pending Changes
+    const pending = shelfStorage.readPendingChanges('admin-user');
+    expect(pending['hades']).toBeDefined();
+    expect(pending['hades']?.hoursPlayed).toBe(99);
+
+    // 2. Simulate going online: triggers sync effect
+    shelfStorage.shouldFail = false;
+    isOnline.set(true); // triggers effect
+    TestBed.flushEffects();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The sync should run and clear the pending queue
+    const pendingAfterSync = shelfStorage.readPendingChanges('admin-user');
+    expect(pendingAfterSync['hades']).toBeUndefined();
+    expect(shelfStorage.lastWrittenEntries['hades']?.hoursPlayed).toBe(99);
   });
 });
 

@@ -151,6 +151,22 @@ export class CommunityShelf {
         { merge: true },
       );
 
+      if (!wasFollowing) {
+        try {
+          const notificationRef = doc(
+            collection(this.firebase.db, 'userNotifications', userId, 'items'),
+          );
+          await setDoc(notificationRef, {
+            senderId: currentUser.id,
+            senderName: currentUser.displayName,
+            type: 'follow',
+            timestamp: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error('Failed to write follow notification', err);
+        }
+      }
+
       return !wasFollowing;
     } catch {
       this.followingIdsState.set(

@@ -6,6 +6,7 @@ import { GameStatus } from '../../models/game';
 import { AccessControl } from '../../services/access-control';
 import { GameCatalog } from '../../services/game-catalog';
 import type { PersistenceResult } from '../../services/game-catalog';
+import { PwaService } from '../../services/pwa';
 import { NotificationCenter, NotificationTone } from '../../services/notification-center';
 import { coverImageStyle } from '../../utils/cover-image-style';
 import { clampNumber } from '../../utils/number-utils';
@@ -48,6 +49,9 @@ export class CatalogPage {
   private readonly catalog = inject(GameCatalog);
   private readonly notifications = inject(NotificationCenter);
   private readonly rawg = inject(RawgGames);
+  private readonly pwa = inject(PwaService);
+
+  protected readonly pwaOnline = this.pwa.online;
 
   protected readonly searchTerm = signal('');
   protected readonly selectedGenre = signal('Tutti');

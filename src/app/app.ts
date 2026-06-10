@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AccessControl } from './services/access-control';
 import { NotificationCenter } from './services/notification-center';
 import { PwaService } from './services/pwa';
+import { SocialNotificationService } from './services/social-notification-service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ export class App {
   private readonly access = inject(AccessControl);
   private readonly notificationCenter = inject(NotificationCenter);
   private readonly pwa = inject(PwaService);
+  private readonly socialNotifications = inject(SocialNotificationService);
 
   protected readonly appName = 'GameShelf';
   protected readonly canEditShelf = this.access.canEditShelf;

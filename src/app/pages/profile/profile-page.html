@@ -46,6 +46,11 @@
             <button type="button" [disabled]="!pwaInstallable()" (click)="installPwa()">
               Installa
             </button>
+            @if (notificationPermission() !== 'granted') {
+              <button type="button" (click)="enableNotifications()">
+                Consenti notifiche
+              </button>
+            }
             <button type="button" [disabled]="!pwaSupported()" (click)="sendReminderNotification()">
               Notifica test
             </button>
@@ -65,6 +70,9 @@
       <div id="accesso">
         <p class="eyebrow">Accesso</p>
         <h2>Rientra nella tua shelf</h2>
+        @if (!pwaOnline()) {
+          <p class="offline-warning">Connessione assente. Accedi quando sarai online.</p>
+        }
         <label class="field">
           <span>Email</span>
           <input
@@ -83,7 +91,7 @@
             (ngModelChange)="updateSignInPassword($event)"
           />
         </label>
-        <button type="button" [disabled]="authBusy()" (click)="signIn()">
+        <button type="button" [disabled]="authBusy() || !pwaOnline()" (click)="signIn()">
           {{ signInBusy() ? 'Accesso...' : 'Accedi' }}
         </button>
       </div>
@@ -91,6 +99,9 @@
       <div id="registrati">
         <p class="eyebrow">Nuovo profilo</p>
         <h2>Crea una shelf</h2>
+        @if (!pwaOnline()) {
+          <p class="offline-warning">Connessione assente. Registrati quando sarai online.</p>
+        }
         <label class="field">
           <span>Nome</span>
           <input
@@ -121,7 +132,7 @@
             (ngModelChange)="updateRegisterPassword($event)"
           />
         </label>
-        <button type="button" [disabled]="authBusy()" (click)="register()">
+        <button type="button" [disabled]="authBusy() || !pwaOnline()" (click)="register()">
           {{ registerBusy() ? 'Creazione...' : 'Registra' }}
         </button>
       </div>

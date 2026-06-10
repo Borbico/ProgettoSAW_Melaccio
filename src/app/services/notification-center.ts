@@ -40,7 +40,31 @@ export class NotificationCenter {
     );
   }
 
+  async requestPermission(): Promise<NotificationPermission> {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return 'default';
+    }
+    const permission = await Notification.requestPermission();
+    return permission;
+  }
+
   private show(tone: NotificationTone, title: string, message: string, timeoutMs = 5000): void {
+    if (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      try {
+        new Notification(title, {
+          body: message,
+          icon: '/icons/icon-192.png',
+        });
+        return;
+      } catch {
+        // Fallback to toast
+      }
+    }
+
     const notification: AppNotification = {
       id: this.nextId,
       tone,

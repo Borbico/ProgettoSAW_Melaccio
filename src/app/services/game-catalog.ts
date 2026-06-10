@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { Unsubscribe } from 'firebase/firestore';
+import { Unsubscribe, collection, doc, setDoc } from 'firebase/firestore';
 import { CatalogGame, toCatalogGame } from '../models/catalog-game';
 import { Game, GameStatus } from '../models/game';
 import { ShelfEntry } from '../models/shelf-entry';
@@ -10,6 +10,9 @@ import { AccessControl } from './access-control';
 import { AuthSession } from './auth-session';
 import { CatalogStorage } from './catalog-storage';
 import { ShelfStorage } from './shelf-storage';
+import { NotificationCenter } from './notification-center';
+import { PwaService } from './pwa';
+import { FirebaseClient } from './firebase-client';
 
 export type { PersistenceResult };
 
@@ -21,6 +24,9 @@ export class GameCatalog {
   private readonly auth = inject(AuthSession);
   private readonly catalogStorage = inject(CatalogStorage);
   private readonly shelfStorage = inject(ShelfStorage);
+  private readonly notifications = inject(NotificationCenter);
+  private readonly pwa = inject(PwaService);
+  private readonly firebase = inject(FirebaseClient);
   private readonly guestUserId = 'guest';
   private readonly catalogGamesState = signal<CatalogGame[]>([]);
   private readonly shelfEntriesState = signal<Record<string, ShelfEntry>>({});
@@ -53,6 +59,16 @@ export class GameCatalog {
 
     effect((onCleanup) => {
       onCleanup(() => unsubscribeCatalog());
+    });
+
+    effect(() => {
+      const isOnline = this.pwa.online();
+      const currentUser = this.auth.currentUser();
+      if (isOnline && currentUser) {
+        untracked(() => {
+          void this.syncOfflineChanges(currentUser.id);
+        });
+      }
     });
   }
 
@@ -130,7 +146,7 @@ export class GameCatalog {
     return this.updateShelfEntry(gameId, { status });
   }
 
-  updateShelfEntry(gameId: string, entry: Partial<ShelfEntry>): Promise<PersistenceResult> {
+  async updateShelfEntry(gameId: string, entry: Partial<ShelfEntry>): Promise<PersistenceResult> {
     if (!this.access.canEditShelf()) {
       return Promise.resolve('denied');
     }
@@ -139,20 +155,56 @@ export class GameCatalog {
       return Promise.resolve('local');
     }
 
-    this.shelfEntriesState.update((entries) => ({
-      ...entries,
-      [gameId]: {
+    const previousEntry = this.shelfEntriesState()[gameId];
+    const isTransitioningToCompleted =
+      entry.status === 'Completato' && (!previousEntry || previousEntry.status !== 'Completato');
+
+    let nextEntry: ShelfEntry | null = null;
+    this.shelfEntriesState.update((entries) => {
+      const updated = {
         ...defaultShelfEntry(),
         ...(entries[gameId] ?? {}),
         ...entry,
         updatedAt: new Date().toISOString(),
-      },
-    }));
+      };
+      nextEntry = updated;
+      return {
+        ...entries,
+        [gameId]: updated,
+      };
+    });
 
-    return this.persistCurrentShelf();
+    const persistence = await this.persistCurrentShelf();
+    const userId = this.auth.currentUser()?.id ?? this.guestUserId;
+    if (userId !== this.guestUserId) {
+      if (persistence === 'fallback') {
+        this.shelfStorage.markPendingChange(userId, gameId, nextEntry);
+      } else if (persistence === 'firebase') {
+        this.shelfStorage.clearPendingChange(userId, gameId);
+      }
+
+      if (isTransitioningToCompleted) {
+        try {
+          const activityRef = doc(collection(this.firebase.db, 'activities'));
+          const catalogGame = this.findCatalogById(gameId);
+          await setDoc(activityRef, {
+            userId,
+            userName: this.auth.currentUser()?.displayName ?? 'Utente',
+            gameId,
+            gameTitle: catalogGame?.title ?? gameId,
+            type: 'completion',
+            timestamp: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error('Failed to write completion activity', err);
+        }
+      }
+    }
+
+    return persistence;
   }
 
-  removeFromShelf(gameId: string): Promise<PersistenceResult> {
+  async removeFromShelf(gameId: string): Promise<PersistenceResult> {
     if (!this.access.canEditShelf()) {
       return Promise.resolve('denied');
     }
@@ -162,7 +214,33 @@ export class GameCatalog {
       return remainingEntries;
     });
 
-    return this.persistCurrentShelf();
+    const persistence = await this.persistCurrentShelf();
+    const userId = this.auth.currentUser()?.id ?? this.guestUserId;
+    if (userId !== this.guestUserId) {
+      if (persistence === 'fallback') {
+        this.shelfStorage.markPendingChange(userId, gameId, null);
+      } else if (persistence === 'firebase') {
+        this.shelfStorage.clearPendingChange(userId, gameId);
+      }
+    }
+
+    return persistence;
+  }
+
+  private async syncOfflineChanges(userId: string): Promise<void> {
+    const pending = this.shelfStorage.readPendingChanges(userId);
+    if (Object.keys(pending).length === 0) {
+      return;
+    }
+
+    const persistence = await this.persistCurrentShelf();
+    if (persistence === 'firebase') {
+      this.shelfStorage.clearPendingChanges(userId);
+      this.notifications.success(
+        'Sincronizzazione completata',
+        'Le modifiche apportate offline sono state salvate nel cloud.'
+      );
+    }
   }
 
   private async persistCatalog(): Promise<PersistenceResult> {

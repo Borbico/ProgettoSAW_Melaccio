@@ -169,6 +169,23 @@ export class ProfilePage {
     );
   }
 
+  protected async enableNotifications(): Promise<void> {
+    const permission = await this.notifications.requestPermission();
+    this.pwa.notificationPermission.set(permission);
+
+    if (permission === 'granted') {
+      this.notifications.success(
+        'Notifiche attivate',
+        'Le notifiche di sistema native sono ora abilitate.'
+      );
+    } else if (permission === 'denied') {
+      this.notifications.warning(
+        'Notifiche bloccate',
+        'Hai bloccato le notifiche nel browser. Sbloccale dalle impostazioni del sito.'
+      );
+    }
+  }
+
   protected async sendReminderNotification(): Promise<void> {
     const sent = await this.pwa.showReminderNotification();
 

@@ -31,9 +31,11 @@ export class ShelfStorage {
     return onSnapshot(
       shelfRef,
       (snapshot) => {
-        const entries = snapshot.exists()
+        let entries = snapshot.exists()
           ? this.normalizeEntries(snapshot.data())
           : this.readLocal(userId);
+
+        entries = this.mergePendingChanges(userId, entries);
 
         onEntries(entries);
       },
@@ -41,6 +43,57 @@ export class ShelfStorage {
         onEntries(this.readLocal(userId));
       },
     );
+  }
+
+  markPendingChange(userId: string, gameId: string, entry: ShelfEntry | null): void {
+    const pending = this.readPendingChanges(userId);
+    pending[gameId] = entry;
+    this.writePendingChanges(userId, pending);
+  }
+
+  clearPendingChange(userId: string, gameId: string): void {
+    const pending = this.readPendingChanges(userId);
+    delete pending[gameId];
+    this.writePendingChanges(userId, pending);
+  }
+
+  readPendingChanges(userId: string): Record<string, ShelfEntry | null> {
+    const key = `gameshelf:pending_sync:${userId}`;
+    return this.readJson<Record<string, ShelfEntry | null>>(key) ?? {};
+  }
+
+  private writePendingChanges(userId: string, pending: Record<string, ShelfEntry | null>): void {
+    const key = `gameshelf:pending_sync:${userId}`;
+    if (this.hasStorage()) {
+      localStorage.setItem(key, JSON.stringify(pending));
+    }
+  }
+
+  clearPendingChanges(userId: string): void {
+    const key = `gameshelf:pending_sync:${userId}`;
+    if (this.hasStorage()) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  private mergePendingChanges(
+    userId: string,
+    remoteEntries: Record<string, ShelfEntry>,
+  ): Record<string, ShelfEntry> {
+    const pending = this.readPendingChanges(userId);
+    if (Object.keys(pending).length === 0) {
+      return remoteEntries;
+    }
+
+    const merged = { ...remoteEntries };
+    for (const [gameId, change] of Object.entries(pending)) {
+      if (change === null) {
+        delete merged[gameId];
+      } else {
+        merged[gameId] = change;
+      }
+    }
+    return merged;
   }
 
   async write(
@@ -92,7 +145,7 @@ export class ShelfStorage {
     return this.normalizeEntryMap(rawEntries as Record<string, Partial<ShelfEntry>>);
   }
 
-  private readLocal(userId: string): Record<string, ShelfEntry> {
+  readLocal(userId: string): Record<string, ShelfEntry> {
     const storedEntries = this.readJson<Record<string, ShelfEntry>>(this.storageKey(userId));
 
     return storedEntries ? this.normalizeEntryMap(storedEntries) : {};

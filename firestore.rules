@@ -47,6 +47,16 @@ service cloud.firestore {
       allow write: if isOwner(userId) && validSocialDocument();
     }
 
+    match /userNotifications/{userId}/items/{notificationId} {
+      allow read, delete: if isOwner(userId);
+      allow create: if signedIn() && request.resource.data.senderId == request.auth.uid && validNotification();
+    }
+
+    match /activities/{activityId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && validActivity();
+    }
+
     function validCatalogDocument() {
       return request.resource.data.keys().hasOnly(['games', 'updatedAt'])
         && request.resource.data.games is list
@@ -163,6 +173,24 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(['followedUserIds', 'updatedAt'])
         && request.resource.data.followedUserIds is list
         && request.resource.data.followedUserIds.size() <= 500;
+    }
+
+    function validNotification() {
+      return request.resource.data.keys().hasOnly(['senderId', 'senderName', 'type', 'timestamp'])
+        && request.resource.data.senderId is string
+        && request.resource.data.senderName is string
+        && request.resource.data.type in ['follow']
+        && request.resource.data.timestamp is string;
+    }
+
+    function validActivity() {
+      return request.resource.data.keys().hasOnly(['userId', 'userName', 'gameId', 'gameTitle', 'type', 'timestamp'])
+        && request.resource.data.userId is string
+        && request.resource.data.userName is string
+        && request.resource.data.gameId is string
+        && request.resource.data.gameTitle is string
+        && request.resource.data.type in ['completion']
+        && request.resource.data.timestamp is string;
     }
   }
 }
