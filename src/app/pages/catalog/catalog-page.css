@@ -386,7 +386,7 @@ h3 {
 .danger-button:disabled,
 .danger-ghost-button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
   transform: none;
 }
 

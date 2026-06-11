@@ -71,6 +71,16 @@ export class GameCatalog {
         untracked(() => {
           void this.syncOfflineChanges(currentUser.id);
         });
+      } else if (!isOnline) {
+        const isAdmin = untracked(() => this.access.canEditCatalog());
+        if (isAdmin) {
+          untracked(() => {
+            this.notifications.warning(
+              'Catalogo in sola lettura',
+              'Sei offline. Le funzionalità di creazione, modifica ed eliminazione del catalogo sono temporaneamente disabilitate.'
+            );
+          });
+        }
       }
     });
 

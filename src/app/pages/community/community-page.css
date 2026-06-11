@@ -216,7 +216,7 @@
 
 .user-actions button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .user-metrics {
