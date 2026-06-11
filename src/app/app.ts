@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationError } from '@angular/router';
 import { AccessControl } from './services/access-control';
 import { GameCatalog } from './services/game-catalog';
 import { NotificationCenter } from './services/notification-center';
@@ -18,12 +18,31 @@ export class App {
   private readonly notificationCenter = inject(NotificationCenter);
   private readonly pwa = inject(PwaService);
   private readonly socialNotifications = inject(SocialNotificationService);
+  private readonly router = inject(Router);
 
   protected readonly appName = 'GameShelf';
   protected readonly canEditShelf = this.access.canEditShelf;
   protected readonly notifications = this.notificationCenter.notifications;
   protected readonly online = this.pwa.online;
   protected readonly pendingSyncCount = this.catalog.pendingSyncCount;
+
+  constructor() {
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationError) {
+        if (!this.online()) {
+          this.notificationCenter.error(
+            'Navigazione non disponibile',
+            'Sei offline. Non è possibile caricare questa pagina perché non è memorizzata in cache.'
+          );
+        } else {
+          this.notificationCenter.error(
+            'Errore di caricamento',
+            'Si è verificato un errore durante il caricamento della pagina.'
+          );
+        }
+      }
+    });
+  }
 
   protected dismissNotification(id: number): void {
     this.notificationCenter.dismiss(id);
