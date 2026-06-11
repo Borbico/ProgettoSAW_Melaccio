@@ -13,8 +13,8 @@ Fonte principale: slide `SAW26_01_-_Introduzione.pdf`, pagine 7-9 e 38.
 | Comunicazione con API esterna | Coperto | Integrazione RAWG via HTTP/JSON per cercare e importare giochi | Documentata in `docs/rawg-integration.md`. |
 | Uso di Firestore | Coperto | Catalogo, shelf personali, profili pubblici, ruoli e configurazione RAWG | Le regole limitano letture e scritture in base al ruolo. |
 | Web app installabile come PWA | Coperto | `manifest.webmanifest`, icone, `PwaService`, install prompt | Documentata in `docs/pwa.md`. |
-| Offline e/o pagina offline di fallback | Coperto | `service-worker.js` con cache app shell e `offline.html` | Firebase e RAWG restano online-first perche dipendono da dati dinamici. |
-| Notifiche, iOS escluso | Coperto | Notifica di test dal profilo tramite service worker | Funzionalita disponibile sul deploy HTTPS. |
+| Offline e/o pagina offline di fallback | Coperto | Service worker con app shell cache, `offline.html`, disattivazione controlli UI offline e coda locale con sincronizzazione automatica al rientro online |
+| Notifiche, iOS escluso | Coperto | Notifiche di test dal profilo e notifiche di sistema native in tempo reale per follow e completamenti gioco | Funzionalita disponibile sul deploy HTTPS e gestita tramite `SocialNotificationService` |
 | Codice su repository pubblico versionato | Coperto | Repository GitHub pubblico: `https://github.com/Borbico/ProgettoSAW_Melaccio` | Ultimo commit locale allineato a `origin/master`. |
 | README con istruzioni e informazioni necessarie | Coperto | README con demo, requisiti, ruoli, setup, Firebase, RAWG, PWA, test e deploy | Da mantenere aggiornato prima della consegna. |
 | Credenziali utente di test nel README | Coperto | README e `scripts/seed-demo-data.mjs` includono account demo standard e admin | Seed admin gia eseguito su Firebase: account demo, profili, ruoli e catalogo sincronizzati. |
@@ -29,12 +29,12 @@ Fonte principale: slide `SAW26_01_-_Introduzione.pdf`, pagine 7-9 e 38.
 | Dati personali per utente | Coperto | MyShelf separata per utente; catalogo senza statistiche personali. |
 | Community / profili pubblici | Coperto | Lista community, profili seguiti/scopri, shelf pubblica per utenti registrati. |
 | Persistenza e fallback locale | Coperto | Servizi storage con Firestore e fallback locale quando Firebase non risponde. |
-| Sicurezza Firestore | Coperto | Rules per catalogo, ruoli, profili, shelf, social e integrazione RAWG. |
+| Sicurezza Firestore | Coperto | Rules per catalogo, ruoli, profili, shelf, social, notifiche e activities. |
 | Responsivita | Quasi coperto | UI rivista su desktop e mobile | Fare un ultimo pass manuale prima della consegna. |
-| Feedback utente | Coperto | Toast/notifiche per salvataggi, errori RAWG/Firebase, permessi e PWA. |
-| Test automatici | Coperto | Test su auth guards, catalogo, community e RAWG | Ultima verifica: `npm test` passato con 17 test. |
+| Feedback utente | Coperto | Toast/notifiche di sistema native per salvataggi, errori RAWG/Firebase, permessi e PWA. |
+| Test automatici | Coperto | Test su auth guards, catalogo, community, RAWG e notifiche social | Ultima verifica: `npm test` passato con 27 test. |
 | Build produzione | Coperto | `npm run build` passato | Rimane solo warning budget iniziale, non bloccante. |
-| Lighthouse PWA | Coperto | Report documentato in `docs/pwa.md` | Facoltativo: ripetere un audit finale dopo l'ultimo deploy per avere un dato aggiornato. |
+| Lighthouse PWA | Coperto | Report documentato in `docs/pwa.md` e in `reports/lighthouse.html` | Ottimo punteggio finale su Accessibilita (95), Best Practices (100) e SEO (91). |
 | Firebase Hosting | Coperto | URL pubblico `https://saw2026melaccio.web.app` | Deploy finale completato e URL verificato online. |
 
 ## Cose da fare prima della consegna
