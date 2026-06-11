@@ -10,7 +10,7 @@
           type="button"
           class="follow-button"
           [class.is-following]="selectedUser.followed"
-          [disabled]="followBusy()"
+          [disabled]="followBusy() || !isOnline()"
           (click)="toggleFollow()"
         >
           {{ selectedUser.followed ? 'Seguito' : 'Segui profilo' }}

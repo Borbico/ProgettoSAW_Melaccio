@@ -75,7 +75,7 @@
             <button
               type="button"
               [class.is-following]="user.followed"
-              [disabled]="followBusyId() === user.id"
+              [disabled]="followBusyId() === user.id || !pwaOnline()"
               (click)="toggleFollow(user)"
             >
               {{ user.followed ? 'Seguito' : 'Segui' }}

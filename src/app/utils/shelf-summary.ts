@@ -49,13 +49,34 @@ export function alignSummaryWithCatalog(
 ): PublicShelfSummary {
   const titlesById = new Map(catalogGames.map((game) => [game.id, game.title]));
 
+  let savedCount = summary.savedCount;
+  let activeCount = summary.activeCount;
+  let completedCount = summary.completedCount;
+  let totalHours = summary.totalHours;
+
+  const filteredRecent = summary.recentGames.filter((game) => {
+    const exists = titlesById.has(game.id);
+    if (!exists) {
+      savedCount = Math.max(0, savedCount - 1);
+      if (game.status === 'In corso') {
+        activeCount = Math.max(0, activeCount - 1);
+      } else if (game.status === 'Completato') {
+        completedCount = Math.max(0, completedCount - 1);
+      }
+      totalHours = Math.max(0, totalHours - game.hoursPlayed);
+    }
+    return exists;
+  });
+
   return {
     ...summary,
-    recentGames: summary.recentGames
-      .filter((game) => titlesById.has(game.id))
-      .map((game) => ({
-        ...game,
-        title: titlesById.get(game.id) ?? game.title,
-      })),
+    savedCount,
+    activeCount,
+    completedCount,
+    totalHours,
+    recentGames: filteredRecent.map((game) => ({
+      ...game,
+      title: titlesById.get(game.id) ?? game.title,
+    })),
   };
 }

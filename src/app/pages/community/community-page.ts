@@ -5,6 +5,7 @@ import { GameStatus } from '../../models/game';
 import { AuthSession } from '../../services/auth-session';
 import { CommunityShelf, CommunityShelfUser } from '../../services/community-shelf';
 import { NotificationCenter } from '../../services/notification-center';
+import { PwaService } from '../../services/pwa';
 import { followFeedback } from '../../utils/follow-feedback';
 import { gameStatusLabel } from '../../utils/status-labels';
 
@@ -20,8 +21,10 @@ export class CommunityPage {
   private readonly auth = inject(AuthSession);
   private readonly community = inject(CommunityShelf);
   private readonly notifications = inject(NotificationCenter);
+  private readonly pwa = inject(PwaService);
 
   protected readonly currentUser = this.auth.currentUser;
+  protected readonly pwaOnline = this.pwa.online;
   protected readonly loaded = this.community.loaded;
   protected readonly users = this.community.users;
   protected readonly followingCount = this.community.followingCount;

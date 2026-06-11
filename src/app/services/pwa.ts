@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { NotificationCenter } from './notification-center';
+import { AuthSession } from './auth-session';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -11,6 +12,7 @@ interface BeforeInstallPromptEvent extends Event {
 })
 export class PwaService {
   private readonly notificationCenter = inject(NotificationCenter);
+  private readonly auth = inject(AuthSession);
   private installPrompt: BeforeInstallPromptEvent | null = null;
   private registration: ServiceWorkerRegistration | null = null;
 
@@ -129,10 +131,18 @@ export class PwaService {
     });
     window.addEventListener('offline', () => {
       this.online.set(false);
-      this.notificationCenter.warning(
-        'Sei disconnesso',
-        "L'applicazione è offline. Le modifiche alla tua shelf verranno salvate in locale e sincronizzate al rientro online.",
-      );
+      const currentUser = this.auth.currentUser();
+      if (currentUser) {
+        this.notificationCenter.warning(
+          'Modalità offline attiva',
+          'Puoi esclusivamente inserire progressi o interagire con la tua MyShelf (le modifiche verranno salvate in locale e sincronizzate al rientro online). Le altre azioni sono bloccate: la ricerca/importazione di giochi da RAWG, la gestione del catalogo comune, i follow nella community e la navigazione su pagine non caricate in cache.',
+        );
+      } else {
+        this.notificationCenter.warning(
+          'Sei disconnesso',
+          "L'applicazione è offline. Le modifiche alla tua shelf verranno salvate in locale e sincronizzate al rientro online.",
+        );
+      }
     });
   }
 

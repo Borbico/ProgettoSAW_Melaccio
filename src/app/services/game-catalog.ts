@@ -71,22 +71,62 @@ export class GameCatalog {
         untracked(() => {
           void this.syncOfflineChanges(currentUser.id);
         });
-      } else if (!isOnline) {
-        const isAdmin = untracked(() => this.access.canEditCatalog());
-        if (isAdmin) {
-          untracked(() => {
-            this.notifications.warning(
-              'Catalogo in sola lettura',
-              'Sei offline. Le funzionalità di creazione, modifica ed eliminazione del catalogo sono temporaneamente disabilitate.'
-            );
-          });
-        }
       }
     });
 
     effect(() => {
       const userId = this.auth.currentUser()?.id ?? this.guestUserId;
       untracked(() => void this.refreshPendingSyncCount(userId));
+    });
+
+    effect(() => {
+      const catalogGames = this.catalogGames();
+      const shelfEntries = this.shelfEntriesState();
+      const userId = this.auth.currentUser()?.id ?? this.guestUserId;
+
+      if (catalogGames.length === 0 || userId === this.guestUserId) {
+        return;
+      }
+
+      const catalogIds = new Set(catalogGames.map((g) => g.id));
+      let hasOrphans = false;
+      const cleanedEntries: Record<string, ShelfEntry> = {};
+      const orphans: string[] = [];
+
+      for (const [gameId, entry] of Object.entries(shelfEntries)) {
+        if (catalogIds.has(gameId)) {
+          cleanedEntries[gameId] = entry;
+        } else {
+          hasOrphans = true;
+          orphans.push(gameId);
+        }
+      }
+
+      if (hasOrphans) {
+        untracked(() => {
+          this.shelfEntriesState.set(cleanedEntries);
+          void this.persistCurrentShelf();
+
+          const removedTitles = orphans.map((id) =>
+            id
+              .split('-')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' '),
+          );
+
+          if (removedTitles.length === 1) {
+            this.notifications.info(
+              'Gioco rimosso dal catalogo',
+              `Il gioco "${removedTitles[0]}" non è più presente nel catalogo ed è stato rimosso dalla tua shelf.`,
+            );
+          } else {
+            this.notifications.info(
+              'Giochi rimossi dal catalogo',
+              `I seguenti giochi non sono più presenti nel catalogo e sono stati rimossi dalla tua shelf: ${removedTitles.join(', ')}.`,
+            );
+          }
+        });
+      }
     });
   }
 

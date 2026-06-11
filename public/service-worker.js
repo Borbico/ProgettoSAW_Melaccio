@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameshelf-pwa-v3';
+const CACHE_NAME = 'gameshelf-pwa-v4';
 const APP_SHELL = [
   '/',
   '/index.html',

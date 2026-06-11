@@ -92,7 +92,7 @@ export class RawgGames {
       search: normalizedQuery,
       page: String(page),
       page_size: String(pageSize),
-      ordering: '-metacritic',
+      search_precise: 'true',
     });
     const data = await this.fetchJson<RawgSearchResponse>(url);
 
