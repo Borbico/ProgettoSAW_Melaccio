@@ -118,7 +118,6 @@ export class ShelfStorage {
         entries,
         updatedAt: serverTimestamp(),
       },
-      { merge: true },
     );
 
     if (publicSummary) {
