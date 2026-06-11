@@ -6,6 +6,7 @@ import { Game } from '../../models/game';
 import { CommunityShelf } from '../../services/community-shelf';
 import { AuthSession } from '../../services/auth-session';
 import { NotificationCenter } from '../../services/notification-center';
+import { PwaService } from '../../services/pwa';
 import { coverImageStyle } from '../../utils/cover-image-style';
 import { followFeedback } from '../../utils/follow-feedback';
 import { buildShelfLanes } from '../../utils/shelf-lanes';
@@ -20,6 +21,7 @@ export class PublicShelfPage {
   private readonly auth = inject(AuthSession);
   private readonly community = inject(CommunityShelf);
   private readonly notifications = inject(NotificationCenter);
+  private readonly pwa = inject(PwaService);
   private readonly route = inject(ActivatedRoute);
   private readonly userId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('userId') ?? '')),
@@ -30,6 +32,7 @@ export class PublicShelfPage {
   protected readonly currentUser = this.auth.currentUser;
   protected readonly user = computed(() => this.community.userById(this.userId()));
   protected readonly shelfLoaded = computed(() => this.community.isShelfLoaded(this.userId()));
+  protected readonly isOnline = this.pwa.online;
   protected readonly followBusy = signal(false);
   protected readonly lanes = computed(() => buildShelfLanes(this.user()?.games ?? []));
 

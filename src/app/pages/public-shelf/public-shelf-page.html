@@ -36,8 +36,13 @@
 
   @if (!shelfLoaded()) {
     <section class="public-empty">
-      <h2>Caricamento shelf...</h2>
-      <p>Recupero i giochi salvati da questo profilo.</p>
+      @if (!isOnline()) {
+        <h2>Sei offline.</h2>
+        <p>Non è possibile caricare la shelf di questo profilo in modalità offline.</p>
+      } @else {
+        <h2>Caricamento shelf...</h2>
+        <p>Recupero i giochi salvati da questo profilo.</p>
+      }
     </section>
   } @else if (selectedUser.games.length) {
     <section class="public-lane-grid" aria-label="Shelf pubblica">

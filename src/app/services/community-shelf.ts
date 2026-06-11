@@ -216,10 +216,10 @@ export class CommunityShelf {
       },
       () => {
         untracked(() => {
-          this.entriesByUserState.update((entriesByUser) => ({
-            ...entriesByUser,
-            [normalizedUserId]: {},
-          }));
+          this.entriesByUserState.update((entriesByUser) => {
+            const { [normalizedUserId]: _, ...remaining } = entriesByUser;
+            return remaining;
+          });
         });
       },
     );
