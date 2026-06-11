@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, effect } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationError } from '@angular/router';
 import { AccessControl } from './services/access-control';
 import { GameCatalog } from './services/game-catalog';
@@ -27,8 +27,11 @@ export class App {
   protected readonly pendingSyncCount = this.catalog.pendingSyncCount;
 
   constructor() {
+    let hasChunkLoadError = false;
+
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationError) {
+        hasChunkLoadError = true;
         if (!this.online()) {
           this.notificationCenter.error(
             'Navigazione non disponibile',
@@ -37,9 +40,18 @@ export class App {
         } else {
           this.notificationCenter.error(
             'Errore di caricamento',
-            'Si è verificato un errore durante il caricamento della pagina.'
+            'Si è verificato un errore durante il caricamento della pagina. Ricarico per ripristinare...'
           );
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
         }
+      }
+    });
+
+    effect(() => {
+      if (this.online() && hasChunkLoadError) {
+        window.location.reload();
       }
     });
   }
