@@ -68,24 +68,24 @@ class FakeShelfStorage {
     this.lastWrittenSummary = publicSummary;
   }
 
-  markPendingChange(userId: string, gameId: string, entry: ShelfEntry | null): void {
+  async markPendingChange(userId: string, gameId: string, entry: ShelfEntry | null): Promise<void> {
     if (!this.pendingChanges[userId]) {
       this.pendingChanges[userId] = {};
     }
     this.pendingChanges[userId][gameId] = entry;
   }
 
-  clearPendingChange(userId: string, gameId: string): void {
+  async clearPendingChange(userId: string, gameId: string): Promise<void> {
     if (this.pendingChanges[userId]) {
       delete this.pendingChanges[userId][gameId];
     }
   }
 
-  readPendingChanges(userId: string): Record<string, ShelfEntry | null> {
+  async readPendingChanges(userId: string): Promise<Record<string, ShelfEntry | null>> {
     return this.pendingChanges[userId] ?? {};
   }
 
-  clearPendingChanges(userId: string): void {
+  async clearPendingChanges(userId: string): Promise<void> {
     delete this.pendingChanges[userId];
   }
 }
@@ -317,7 +317,7 @@ describe('GameCatalog', () => {
 
     expect(persistence).toBe('fallback');
     // Change should be queued in pending Changes
-    const pending = shelfStorage.readPendingChanges('admin-user');
+    const pending = await shelfStorage.readPendingChanges('admin-user');
     expect(pending['hades']).toBeDefined();
     expect(pending['hades']?.hoursPlayed).toBe(99);
     expect(catalog.pendingSyncCount()).toBe(1);
@@ -327,12 +327,10 @@ describe('GameCatalog', () => {
     shelfStorage.shouldFail = false;
     isOnline.set(true); // triggers effect
     TestBed.flushEffects();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     // The sync should run and clear the pending queue
-    const pendingAfterSync = shelfStorage.readPendingChanges('admin-user');
+    const pendingAfterSync = await shelfStorage.readPendingChanges('admin-user');
     expect(pendingAfterSync['hades']).toBeUndefined();
     expect(catalog.pendingSyncCount()).toBe(0);
     expect(catalog.hasPendingSync()).toBe(false);

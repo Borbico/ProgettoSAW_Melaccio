@@ -11,12 +11,14 @@ import { PublicShelfSummary } from '../models/public-shelf-summary';
 import { ShelfEntry } from '../models/shelf-entry';
 import { normalizeShelfEntry } from '../utils/shelf-entry-utils';
 import { FirebaseClient } from './firebase-client';
+import { IndexedDbStore } from './indexed-db-store';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ShelfStorage {
   private readonly firebase = inject(FirebaseClient);
+  private readonly db = inject(IndexedDbStore);
   private readonly guestUserId = 'guest';
   private readonly keyPrefix = 'gameshelf:shelf';
 
@@ -28,63 +30,61 @@ export class ShelfStorage {
 
     const shelfRef = this.shelfDocument(userId);
 
+    // Carica immediatamente lo stato offline asincrono all'avvio
+    this.readLocal(userId).then(async (localEntries) => {
+      const merged = await this.mergePendingChanges(userId, localEntries);
+      onEntries(merged);
+    });
+
     return onSnapshot(
       shelfRef,
-      (snapshot) => {
+      async (snapshot) => {
         let entries = snapshot.exists()
           ? this.normalizeEntries(snapshot.data())
-          : this.readLocal(userId);
+          : await this.readLocal(userId);
 
-        entries = this.mergePendingChanges(userId, entries);
+        entries = await this.mergePendingChanges(userId, entries);
 
         onEntries(entries);
       },
-      () => {
-        onEntries(this.readLocal(userId));
+      async () => {
+        onEntries(await this.readLocal(userId));
       },
     );
   }
 
-  markPendingChange(userId: string, gameId: string, entry: ShelfEntry | null): void {
-    const pending = this.readPendingChanges(userId);
+  async markPendingChange(userId: string, gameId: string, entry: ShelfEntry | null): Promise<void> {
+    const pending = await this.readPendingChanges(userId);
     pending[gameId] = entry;
-    this.writePendingChanges(userId, pending);
+    await this.writePendingChanges(userId, pending);
   }
 
-  clearPendingChange(userId: string, gameId: string): void {
-    const pending = this.readPendingChanges(userId);
+  async clearPendingChange(userId: string, gameId: string): Promise<void> {
+    const pending = await this.readPendingChanges(userId);
     delete pending[gameId];
-    this.writePendingChanges(userId, pending);
+    await this.writePendingChanges(userId, pending);
   }
 
-  readPendingChanges(userId: string): Record<string, ShelfEntry | null> {
+  async readPendingChanges(userId: string): Promise<Record<string, ShelfEntry | null>> {
     const key = `gameshelf:pending_sync:${userId}`;
-    return this.readJson<Record<string, ShelfEntry | null>>(key) ?? {};
+    return (await this.db.get<Record<string, ShelfEntry | null>>(key)) ?? {};
   }
 
-  private writePendingChanges(userId: string, pending: Record<string, ShelfEntry | null>): void {
+  private async writePendingChanges(userId: string, pending: Record<string, ShelfEntry | null>): Promise<void> {
     const key = `gameshelf:pending_sync:${userId}`;
-    if (this.hasStorage()) {
-      try {
-        localStorage.setItem(key, JSON.stringify(pending));
-      } catch (err) {
-        console.error('Failed to write pending changes to localStorage', err);
-      }
-    }
+    await this.db.set(key, pending);
   }
 
-  clearPendingChanges(userId: string): void {
+  async clearPendingChanges(userId: string): Promise<void> {
     const key = `gameshelf:pending_sync:${userId}`;
-    if (this.hasStorage()) {
-      localStorage.removeItem(key);
-    }
+    await this.db.remove(key);
   }
 
-  private mergePendingChanges(
+  private async mergePendingChanges(
     userId: string,
     remoteEntries: Record<string, ShelfEntry>,
-  ): Record<string, ShelfEntry> {
-    const pending = this.readPendingChanges(userId);
+  ): Promise<Record<string, ShelfEntry>> {
+    const pending = await this.readPendingChanges(userId);
     if (Object.keys(pending).length === 0) {
       return remoteEntries;
     }
@@ -109,7 +109,7 @@ export class ShelfStorage {
       return;
     }
 
-    this.writeLocal(userId, entries);
+    await this.writeLocal(userId, entries);
     const batch = writeBatch(this.firebase.db);
 
     batch.set(
@@ -149,20 +149,14 @@ export class ShelfStorage {
     return this.normalizeEntryMap(rawEntries as Record<string, Partial<ShelfEntry>>);
   }
 
-  readLocal(userId: string): Record<string, ShelfEntry> {
-    const storedEntries = this.readJson<Record<string, ShelfEntry>>(this.storageKey(userId));
+  async readLocal(userId: string): Promise<Record<string, ShelfEntry>> {
+    const storedEntries = await this.db.get<Record<string, ShelfEntry>>(this.storageKey(userId));
 
     return storedEntries ? this.normalizeEntryMap(storedEntries) : {};
   }
 
-  private writeLocal(userId: string, entries: Record<string, ShelfEntry>): void {
-    if (this.hasStorage()) {
-      try {
-        localStorage.setItem(this.storageKey(userId), JSON.stringify(entries));
-      } catch (err) {
-        console.error('Failed to write shelf entries to localStorage', err);
-      }
-    }
+  private async writeLocal(userId: string, entries: Record<string, ShelfEntry>): Promise<void> {
+    await this.db.set(this.storageKey(userId), entries);
   }
 
   private normalizeEntryMap(
@@ -175,27 +169,5 @@ export class ShelfStorage {
 
   private storageKey(userId: string): string {
     return `${this.keyPrefix}:${userId}`;
-  }
-
-  private readJson<T>(key: string): T | null {
-    if (!this.hasStorage()) {
-      return null;
-    }
-
-    const value = localStorage.getItem(key);
-
-    if (!value) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return null;
-    }
-  }
-
-  private hasStorage(): boolean {
-    return typeof localStorage !== 'undefined';
   }
 }

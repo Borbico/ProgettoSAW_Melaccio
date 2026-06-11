@@ -11,33 +11,40 @@ import { MOCK_GAMES } from '../data/mock-games';
 import { CatalogGame, toCatalogGame } from '../models/catalog-game';
 import { clampNumber } from '../utils/number-utils';
 import { FirebaseClient } from './firebase-client';
+import { IndexedDbStore } from './indexed-db-store';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CatalogStorage {
   private readonly firebase = inject(FirebaseClient);
+  private readonly db = inject(IndexedDbStore);
   private readonly keyPrefix = 'gameshelf:catalog';
 
   watch(onGames: (games: CatalogGame[]) => void): Unsubscribe {
     const catalogRef = this.catalogDocument();
 
+    // Carica immediatamente il catalogo locale offline asincrono all'avvio
+    this.readLocal().then((games) => onGames(games));
+
     return onSnapshot(
       catalogRef,
-      (snapshot) => {
-        const games = snapshot.exists() ? this.normalizeGames(snapshot.data()) : this.readLocal();
+      async (snapshot) => {
+        const games = snapshot.exists()
+          ? this.normalizeGames(snapshot.data())
+          : await this.readLocal();
 
         onGames(games);
       },
-      () => {
-        onGames(this.readLocal());
+      async () => {
+        onGames(await this.readLocal());
       },
     );
   }
 
   async write(games: CatalogGame[]): Promise<void> {
     const normalizedGames = this.normalizeList(games);
-    this.writeLocal(normalizedGames);
+    await this.writeLocal(normalizedGames);
 
     await setDoc(
       this.catalogDocument(),
@@ -63,16 +70,14 @@ export class CatalogStorage {
     return this.normalizeList(rawGames as Partial<CatalogGame>[]);
   }
 
-  private readLocal(): CatalogGame[] {
-    const storedGames = this.readJson<CatalogGame[]>(this.storageKey());
+  private async readLocal(): Promise<CatalogGame[]> {
+    const storedGames = await this.db.get<CatalogGame[]>(this.storageKey());
 
     return storedGames ? this.normalizeList(storedGames) : this.defaultGames();
   }
 
-  private writeLocal(games: CatalogGame[]): void {
-    if (this.hasStorage()) {
-      localStorage.setItem(this.storageKey(), JSON.stringify(games));
-    }
+  private async writeLocal(games: CatalogGame[]): Promise<void> {
+    await this.db.set(this.storageKey(), games);
   }
 
   private defaultGames(): CatalogGame[] {
@@ -136,27 +141,5 @@ export class CatalogStorage {
 
   private storageKey(): string {
     return `${this.keyPrefix}:global`;
-  }
-
-  private readJson<T>(key: string): T | null {
-    if (!this.hasStorage()) {
-      return null;
-    }
-
-    const value = localStorage.getItem(key);
-
-    if (!value) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return null;
-    }
-  }
-
-  private hasStorage(): boolean {
-    return typeof localStorage !== 'undefined';
   }
 }
