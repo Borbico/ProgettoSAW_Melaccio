@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { NotificationCenter } from './notification-center';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -9,6 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
   providedIn: 'root',
 })
 export class PwaService {
+  private readonly notificationCenter = inject(NotificationCenter);
   private installPrompt: BeforeInstallPromptEvent | null = null;
   private registration: ServiceWorkerRegistration | null = null;
 
@@ -30,12 +32,14 @@ export class PwaService {
       this.installable.set(false);
       this.unregisterLocalServiceWorkers();
       this.listenForConnectionChanges();
+      this.checkStartupConnection();
       return;
     }
 
     this.registerServiceWorker();
     this.listenForInstallPrompt();
     this.listenForConnectionChanges();
+    this.checkStartupConnection();
   }
 
   async install(): Promise<boolean> {
@@ -116,8 +120,20 @@ export class PwaService {
   }
 
   private listenForConnectionChanges(): void {
-    window.addEventListener('online', () => this.online.set(true));
-    window.addEventListener('offline', () => this.online.set(false));
+    window.addEventListener('online', () => {
+      this.online.set(true);
+      this.notificationCenter.success(
+        'Connessione ripristinata',
+        'Sei di nuovo online. Tutte le modifiche offline verranno sincronizzate.',
+      );
+    });
+    window.addEventListener('offline', () => {
+      this.online.set(false);
+      this.notificationCenter.warning(
+        'Sei disconnesso',
+        "L'applicazione è offline. Le modifiche alla tua shelf verranno salvate in locale e sincronizzate al rientro online.",
+      );
+    });
   }
 
   private notificationsSupported(): boolean {
@@ -170,5 +186,27 @@ export class PwaService {
 
   private isBrowser(): boolean {
     return typeof window !== 'undefined' && typeof navigator !== 'undefined';
+  }
+
+  private checkStartupConnection(): void {
+    if (!this.isBrowser()) {
+      return;
+    }
+
+    // Imposta il valore iniziale basato su navigator.onLine
+    this.online.set(navigator.onLine);
+
+    // Esegue un ping di rete asincrono per confermare l'effettiva connettività
+    fetch('https://firestore.googleapis.com', {
+      method: 'HEAD',
+      mode: 'no-cors',
+      cache: 'no-store',
+    })
+      .then(() => {
+        this.online.set(true);
+      })
+      .catch(() => {
+        this.online.set(false);
+      });
   }
 }

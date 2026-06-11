@@ -25,7 +25,7 @@ export function notifyPersistenceResult(
     notifications.warning(
       options.fallbackTitle ?? 'Salvataggio locale',
       options.fallbackMessage ??
-        `${successMessage} Firebase non ha risposto: la copia locale e aggiornata.`,
+        `${successMessage} Firebase non ha risposto: la copia locale è aggiornata.`,
     );
     return;
   }

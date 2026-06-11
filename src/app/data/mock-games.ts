@@ -18,7 +18,7 @@ export const MOCK_GAMES: Game[] = [
     description:
       "Hollow Knight is a Metroidvania-type game developed by an indie studio named Team Cherry. Most of the game's story is told through the in-world items, tablets, and thoughts of other characters. Many plot aspects are told to the player indirectly or through secret areas.",
     notes:
-      'Ottimo esempio di level design leggibile e progressione basata sulle abilita sbloccate.',
+      'Ottimo esempio di level design leggibile e progressione basata sulle abilità sbloccate.',
     personalGoal: 'Rigiocarlo puntando al completamento avanzato.',
     coverTheme: 'cover-moon',
     coverImageUrl: 'https://media.rawg.io/media/games/4cf/4cfc6b7f1850590a4634b08bfab308ab.jpg',
@@ -42,7 +42,7 @@ export const MOCK_GAMES: Game[] = [
     description:
       'Celeste is a platformer about climbing a mountain, from the creators of TowerFall. Explore a sprawling mountain with over 500 levels bursting with secrets, across 8 unique areas. Unlock a hardcore Remix for each area, with completely new levels.',
     notes:
-      'Funziona bene per analizzare difficolta progressiva, feedback immediato e accessibilita.',
+      'Funziona bene per analizzare difficoltà progressiva, feedback immediato e accessibilità.',
     personalGoal: 'Completare altri lati B senza usare assist mode.',
     coverTheme: 'cover-summit',
     coverImageUrl: 'https://media.rawg.io/media/games/594/59487800889ebac294c7c2c070d02356.jpg',
@@ -158,7 +158,7 @@ export const MOCK_GAMES: Game[] = [
     description:
       'The Golden Order has been broken. Rise, Tarnished, and be guided by grace to brandish the power of the Elden Ring and become an Elden Lord in the Lands Between ruled by Queen Marika the Eternal.',
     notes: 'Utile per mostrare un gioco lungo con progressione aperta e obiettivi personali.',
-    personalGoal: 'Finire la quest principale senza cambiare build a meta run.',
+    personalGoal: 'Finire la quest principale senza cambiare build a metà run.',
     coverTheme: 'cover-ember',
     coverImageUrl: 'https://media.rawg.io/media/games/b29/b294fdd866dcdb643e7bab370a552855.jpg',
     sourceName: 'RAWG',
@@ -296,7 +296,7 @@ export const MOCK_GAMES: Game[] = [
     description:
       'Final Fantasy VI first debuted in 1994 as the sixth installment in the iconic Final Fantasy series. Innovations included the ability to play all the main characters as the protagonist, and its epic story remains highly rated.',
     notes: 'Aggiunto come esempio importato da RAWG per ampliare il catalogo RPG classico.',
-    personalGoal: 'Valutare una run completa dopo i titoli gia in corso.',
+    personalGoal: 'Valutare una run completa dopo i titoli già in corso.',
     coverTheme: 'cover-orbit',
     coverImageUrl: 'https://media.rawg.io/media/games/98c/98c87b286cd2a2ba942167df384a9bd3.jpg',
     sourceName: 'RAWG',

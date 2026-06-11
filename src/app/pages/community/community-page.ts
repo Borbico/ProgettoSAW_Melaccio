@@ -83,7 +83,7 @@ export class CommunityPage {
     } catch {
       this.notifications.error(
         'Aggiornamento non riuscito',
-        'Non e stato possibile aggiornare i profili seguiti. Riprova tra qualche secondo.',
+        'Non è stato possibile aggiornare i profili seguiti. Riprova tra qualche secondo.',
       );
     } finally {
       this.followBusyId.set('');

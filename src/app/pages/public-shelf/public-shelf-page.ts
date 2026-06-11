@@ -64,7 +64,7 @@ export class PublicShelfPage {
     } catch {
       this.notifications.error(
         'Aggiornamento non riuscito',
-        'Non e stato possibile aggiornare i profili seguiti. Riprova tra qualche secondo.',
+        'Non è stato possibile aggiornare i profili seguiti. Riprova tra qualche secondo.',
       );
     } finally {
       this.followBusy.set(false);

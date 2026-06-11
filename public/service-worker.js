@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameshelf-pwa-v2';
+const CACHE_NAME = 'gameshelf-pwa-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -69,12 +69,20 @@ async function networkFirstNavigation(request) {
     const response = await fetch(request);
 
     if (response.ok) {
-      await cache.put('/index.html', response.clone());
+      // Memorizza la risposta con la chiave della richiesta specifica (es. /catalogo)
+      await cache.put(request, response.clone());
     }
 
     return response;
   } catch {
-    const cachedIndex = await cache.match('/index.html');
+    // Prova a recuperare la pagina esatta dalla cache
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Se non presente, prova con la shell index.html o la root /
+    const cachedIndex = await cache.match('/index.html') || await cache.match('/');
     const offlineFallback = await cache.match('/offline.html');
 
     return cachedIndex ?? offlineFallback;

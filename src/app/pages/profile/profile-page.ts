@@ -143,7 +143,7 @@ export class ProfilePage {
     } catch {
       this.setAuthFeedback(
         'error',
-        'Registrazione non riuscita. La email potrebbe essere gia in uso.',
+        'Registrazione non riuscita. La email potrebbe essere già in uso.',
       );
     } finally {
       this.registerBusy.set(false);
@@ -159,7 +159,7 @@ export class ProfilePage {
     const installed = await this.pwa.install();
 
     if (installed) {
-      this.notifications.success('App installata', 'GameShelf e pronta come PWA.');
+      this.notifications.success('App installata', 'GameShelf è pronta come PWA.');
       return;
     }
 
@@ -190,13 +190,13 @@ export class ProfilePage {
     const sent = await this.pwa.showReminderNotification();
 
     if (sent) {
-      this.notifications.success('Notifica inviata', 'Il promemoria PWA e stato mostrato.');
+      this.notifications.success('Notifica inviata', 'Il promemoria PWA è stato mostrato.');
       return;
     }
 
     this.notifications.warning(
       'Notifiche non attive',
-      'Il browser non supporta le notifiche oppure il permesso non e stato concesso.',
+      'Il browser non supporta le notifiche oppure il permesso non è stato concesso.',
     );
   }
 

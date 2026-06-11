@@ -11,6 +11,6 @@ export function followFeedback(displayName: string, followed: boolean): FollowFe
       }
     : {
         title: 'Profilo rimosso',
-        message: `${displayName} non e piu tra i profili seguiti.`,
+        message: `${displayName} non è più tra i profili seguiti.`,
       };
 }

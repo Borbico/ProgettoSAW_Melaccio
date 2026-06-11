@@ -291,7 +291,7 @@ export class CatalogPage {
       const message = this.rawgFailureMessage(error);
 
       this.setRawgFeedback('error', message);
-      this.notifications.error('Import non riuscito', `${result.title} non e stato importato.`);
+      this.notifications.error('Import non riuscito', `${result.title} non è stato importato.`);
     } finally {
       this.rawgImportingId.set(null);
     }
@@ -386,12 +386,12 @@ export class CatalogPage {
         if (persistence === 'denied') {
           this.setCatalogFeedback(
             'error',
-            'Permesso negato: solo un admin puo modificare il catalogo.',
+            'Permesso negato: solo un admin può modificare il catalogo.',
           );
           this.notifyPersistence(
             persistence,
             'Permesso negato',
-            `${game.title} non e stato aggiornato.`,
+            `${game.title} non è stato aggiornato.`,
           );
           return;
         }
@@ -400,16 +400,16 @@ export class CatalogPage {
         this.notifyPersistence(
           persistence,
           'Gioco aggiornato',
-          `${game.title} e stato aggiornato.`,
+          `${game.title} è stato aggiornato.`,
         );
       } else {
         const { persistence } = await this.catalog.createGame(game);
         if (persistence === 'denied') {
-          this.setCatalogFeedback('error', 'Permesso negato: solo un admin puo creare giochi.');
+          this.setCatalogFeedback('error', 'Permesso negato: solo un admin può creare giochi.');
           this.notifyPersistence(
             persistence,
             'Permesso negato',
-            `${game.title} non e stato aggiunto.`,
+            `${game.title} non è stato aggiunto.`,
           );
           return;
         }
@@ -419,7 +419,7 @@ export class CatalogPage {
         this.notifyPersistence(
           persistence,
           'Gioco aggiunto',
-          `${game.title} e stato aggiunto al catalogo.`,
+          `${game.title} è stato aggiunto al catalogo.`,
         );
       }
 
@@ -427,7 +427,7 @@ export class CatalogPage {
       this.editingGameId.set(null);
       this.form.set(this.emptyForm());
     } catch {
-      const message = 'Non e stato possibile salvare il gioco. Riprova tra qualche secondo.';
+      const message = 'Non è stato possibile salvare il gioco. Riprova tra qualche secondo.';
       this.setCatalogFeedback('error', message);
       this.notifications.error('Salvataggio non riuscito', message);
     } finally {
@@ -468,11 +468,11 @@ export class CatalogPage {
     try {
       const persistence = await this.catalog.deleteGame(game.id);
       if (persistence === 'denied') {
-        this.setCatalogFeedback('error', 'Permesso negato: solo un admin puo eliminare giochi.');
+        this.setCatalogFeedback('error', 'Permesso negato: solo un admin può eliminare giochi.');
         this.notifyPersistence(
           persistence,
           'Permesso negato',
-          `${game.title} non e stato eliminato.`,
+          `${game.title} non è stato eliminato.`,
         );
         return;
       }
@@ -483,9 +483,9 @@ export class CatalogPage {
 
       this.deleteCandidateId.set(null);
       this.setCatalogFeedback('success', `${game.title} eliminato dal catalogo.`);
-      this.notifyPersistence(persistence, 'Gioco eliminato', `${game.title} e stato eliminato.`);
+      this.notifyPersistence(persistence, 'Gioco eliminato', `${game.title} è stato eliminato.`);
     } catch {
-      const message = 'Non e stato possibile eliminare il gioco. Riprova tra qualche secondo.';
+      const message = 'Non è stato possibile eliminare il gioco. Riprova tra qualche secondo.';
       this.setCatalogFeedback('error', message);
       this.notifications.error('Eliminazione non riuscita', message);
     } finally {
@@ -533,7 +533,7 @@ export class CatalogPage {
     }
 
     if (message === 'RAWG_NETWORK_UNAVAILABLE') {
-      return 'RAWG non e raggiungibile dalla rete in questo momento.';
+      return 'RAWG non è raggiungibile dalla rete in questo momento.';
     }
 
     if (message === 'RAWG_REQUEST_FAILED_401' || message === 'RAWG_REQUEST_FAILED_403') {
@@ -718,7 +718,7 @@ export class CatalogPage {
 
       if (status === 'remove') {
         const persistence = await this.catalog.removeFromShelf(game.id);
-        const message = `${game.title} e stato rimosso dalla tua MyShelf.`;
+        const message = `${game.title} è stato rimosso dalla tua MyShelf.`;
 
         this.setShelfCatalogFeedback(persistence, `${game.title} rimosso da MyShelf.`);
         this.notifyShelfPersistence(persistence, 'Rimosso da MyShelf', message);
@@ -727,8 +727,8 @@ export class CatalogPage {
         const shelfGroup = gameStatusGroupLabel(status);
         const title = previousStatus ? 'MyShelf aggiornata' : 'Aggiunto a MyShelf';
         const message = previousStatus
-          ? `${game.title} e stato spostato in ${shelfGroup}.`
-          : `${game.title} e stato aggiunto in ${shelfGroup}. Apri MyShelf o la scheda gioco per completare ore, voto e note.`;
+          ? `${game.title} è stato spostato in ${shelfGroup}.`
+          : `${game.title} è stato aggiunto in ${shelfGroup}. Apri MyShelf o la scheda gioco per completare ore, voto e note.`;
 
         this.setShelfCatalogFeedback(
           persistence,

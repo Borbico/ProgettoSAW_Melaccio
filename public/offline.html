@@ -65,12 +65,48 @@
 <body>
   <main>
     <span>GS</span>
-    <h1>GameShelf e offline.</h1>
+    <h1>GameShelf è offline.</h1>
     <p>
-      Puoi riaprire le pagine gia visitate quando la cache e disponibile. Per sincronizzare catalogo,
+      Puoi riaprire le pagine già visitate quando la cache è disponibile. Per sincronizzare catalogo,
       MyShelf e dati RAWG serve tornare online.
     </p>
     <a href="/catalogo">Torna al catalogo</a>
   </main>
+  <script>
+    function tryRedirect() {
+      if (window.location.pathname.endsWith('/offline.html')) {
+        window.location.href = '/catalogo';
+      } else {
+        window.location.reload();
+      }
+    }
+
+    function checkConnection() {
+      fetch('https://firestore.googleapis.com', {
+        method: 'HEAD',
+        mode: 'no-cors',
+        cache: 'no-store'
+      })
+      .then(function() {
+        tryRedirect();
+      })
+      .catch(function() {
+        // Ancora offline
+      });
+    }
+
+    // Ascolta l'evento online del browser
+    window.addEventListener('online', checkConnection);
+
+    // Controlla periodicamente nel caso in cui l'evento venga mancato
+    setInterval(function() {
+      if (navigator.onLine) {
+        checkConnection();
+      }
+    }, 5000);
+
+    // Esegui anche un controllo iniziale all'avvio
+    checkConnection();
+  </script>
 </body>
 </html>

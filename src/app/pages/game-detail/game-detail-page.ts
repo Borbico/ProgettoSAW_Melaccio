@@ -147,7 +147,7 @@ export class GameDetailPage {
       if (persistence === 'denied') {
         this.saveMessageTone.set('error');
         this.saveMessage.set('Accedi per salvare modifiche su MyShelf.');
-        this.notifyPersistence(persistence, 'MyShelf', `${game.title} non e stato aggiornato.`);
+        this.notifyPersistence(persistence, 'MyShelf', `${game.title} non è stato aggiornato.`);
         return;
       }
 
@@ -156,14 +156,14 @@ export class GameDetailPage {
       this.notifyPersistence(
         persistence,
         'MyShelf aggiornata',
-        `${game.title} e stato aggiornato.`,
+        `${game.title} è stato aggiornato.`,
       );
     } catch {
       this.saveMessageTone.set('error');
       this.saveMessage.set('Salvataggio non riuscito.');
       this.notifications.error(
         'Salvataggio non riuscito',
-        'Non e stato possibile aggiornare la tua MyShelf. Riprova tra qualche secondo.',
+        'Non è stato possibile aggiornare la tua MyShelf. Riprova tra qualche secondo.',
       );
     } finally {
       this.savingShelf.set(false);
@@ -176,7 +176,7 @@ export class GameDetailPage {
     this.loadDraft(shelfGame);
     this.saveMessageTone.set('info');
     this.saveMessage.set('Modifiche annullate.');
-    this.notifications.info('Modifiche annullate', `${game.title} e tornato ai valori salvati.`);
+    this.notifications.info('Modifiche annullate', `${game.title} è tornato ai valori salvati.`);
   }
 
   protected draftRatingStars(): string {
