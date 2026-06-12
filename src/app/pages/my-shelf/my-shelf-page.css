@@ -28,11 +28,11 @@ h2 {
   padding: 18px;
   border-radius: 8px;
   color: #ffffff;
-  background: #151515;
+  background: #267a71;
 }
 
 .shelf-stats div:nth-child(2) {
-  background: #267a71;
+  background: #151515;
 }
 
 .shelf-stats div:nth-child(3) {
