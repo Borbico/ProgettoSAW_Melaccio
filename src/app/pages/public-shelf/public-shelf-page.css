@@ -7,9 +7,10 @@
 }
 
 .public-shelf-hero h1 {
-  max-width: 10ch;
+  max-width: 16ch;
   font-size: clamp(2.8rem, 7vw, 5.2rem);
   line-height: 0.92;
+  overflow-wrap: break-word;
 }
 
 .follow-button {
@@ -181,14 +182,19 @@
   }
 }
 
-@media (max-width: 760px) {
-  .public-shelf-hero,
-  .public-stats,
-  .public-lane-grid {
+@media (max-width: 900px) {
+  .public-shelf-hero {
     grid-template-columns: 1fr;
   }
 
   .public-shelf-hero h1 {
     max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-stats,
+  .public-lane-grid {
+    grid-template-columns: 1fr;
   }
 }
