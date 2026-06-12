@@ -33,7 +33,7 @@
 @if (hasShelfGames()) {
   <section class="lane-grid" aria-label="Stati della libreria">
     @for (lane of lanes(); track lane.title) {
-      <article class="lane">
+      <article class="lane" [class]="'lane lane-' + lane.status.toLowerCase().replace(' ', '-')">
         <header>
           <h2>{{ lane.title }}</h2>
           <span>{{ lane.games.length }}</span>

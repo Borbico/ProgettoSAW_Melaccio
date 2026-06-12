@@ -83,8 +83,26 @@
   min-width: 0;
   padding: 16px;
   border: 1px solid rgba(21, 21, 21, 0.1);
+  border-top: 4px solid #151515;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+}
+
+.public-lane.lane-wishlist {
+  border-top-color: #f4b942;
+}
+
+.public-lane.lane-backlog {
+  border-top-color: #151515;
+}
+
+.public-lane.lane-in-corso {
+  border-top-color: #267a71;
+}
+
+.public-lane.lane-completato {
+  border-top-color: #b4452c;
 }
 
 .public-lane header {
@@ -93,6 +111,12 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.public-lane header h2 {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #151515;
 }
 
 .public-lane header span {
@@ -104,6 +128,27 @@
   color: #ffffff;
   background: #151515;
   font-weight: 900;
+  transition: background-color 150ms ease;
+}
+
+.public-lane.lane-wishlist header span {
+  background: #f4b942;
+  color: #151515;
+}
+
+.public-lane.lane-backlog header span {
+  background: #151515;
+  color: #ffffff;
+}
+
+.public-lane.lane-in-corso header span {
+  background: #267a71;
+  color: #ffffff;
+}
+
+.public-lane.lane-completato header span {
+  background: #b4452c;
+  color: #ffffff;
 }
 
 .public-lane-list {
