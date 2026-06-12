@@ -31,8 +31,12 @@ export class GameCatalog {
   private readonly catalogGamesState = signal<CatalogGame[]>([]);
   private readonly shelfEntriesState = signal<Record<string, ShelfEntry>>({});
   private readonly pendingSyncCountState = signal(0);
+  private readonly catalogSourceState = signal<'firebase' | 'local'>('local');
+  private readonly catalogErrorState = signal<any>(null);
 
   readonly catalogGames = this.catalogGamesState.asReadonly();
+  readonly catalogSource = this.catalogSourceState.asReadonly();
+  readonly catalogError = this.catalogErrorState.asReadonly();
   readonly shelfGames = computed(() =>
     composeShelfGames(this.catalogGamesState(), this.shelfEntriesState()),
   );
@@ -41,9 +45,25 @@ export class GameCatalog {
   readonly hasPendingSync = computed(() => this.pendingSyncCountState() > 0);
 
   constructor() {
-    const unsubscribeCatalog: Unsubscribe = this.catalogStorage.watch((catalogGames) => {
+    const unsubscribeCatalog: Unsubscribe = this.catalogStorage.watch((catalogGames, source, error) => {
       untracked(() => {
         this.catalogGamesState.set(catalogGames);
+        this.catalogSourceState.set(source);
+        this.catalogErrorState.set(error ?? null);
+
+        if (error) {
+          if (catalogGames.length === 0) {
+            this.notifications.error(
+              'Errore caricamento catalogo',
+              'Impossibile caricare il catalogo dei videogiochi. Controlla la tua connessione.'
+            );
+          } else {
+            this.notifications.warning(
+              'Connessione persa',
+              'Impossibile aggiornare il catalogo online. Viene mostrata la versione offline memorizzata in locale.'
+            );
+          }
+        }
       });
     });
 
@@ -83,8 +103,9 @@ export class GameCatalog {
       const catalogGames = this.catalogGames();
       const shelfEntries = this.shelfEntriesState();
       const userId = this.auth.currentUser()?.id ?? this.guestUserId;
+      const source = this.catalogSource();
 
-      if (catalogGames.length === 0 || userId === this.guestUserId) {
+      if (catalogGames.length === 0 || userId === this.guestUserId || source !== 'firebase') {
         return;
       }
 

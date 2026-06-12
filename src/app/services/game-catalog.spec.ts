@@ -28,8 +28,10 @@ class FakeCatalogStorage {
   lastWrittenGames: CatalogGame[] = [];
   private games = MOCK_GAMES.map((game) => toCatalogGame(game));
 
-  watch(onGames: (games: CatalogGame[]) => void) {
-    onGames(this.games);
+  watch(
+    onGames: (games: CatalogGame[], source: 'firebase' | 'local', error?: any) => void,
+  ) {
+    onGames(this.games, 'firebase');
     return () => undefined;
   }
 

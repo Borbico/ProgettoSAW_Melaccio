@@ -7,8 +7,7 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import { MOCK_GAMES } from '../data/mock-games';
-import { CatalogGame, toCatalogGame } from '../models/catalog-game';
+import { CatalogGame } from '../models/catalog-game';
 import { clampNumber } from '../utils/number-utils';
 import { FirebaseClient } from './firebase-client';
 import { IndexedDbStore } from './indexed-db-store';
@@ -21,23 +20,36 @@ export class CatalogStorage {
   private readonly db = inject(IndexedDbStore);
   private readonly keyPrefix = 'gameshelf:catalog';
 
-  watch(onGames: (games: CatalogGame[]) => void): Unsubscribe {
+  watch(
+    onGames: (games: CatalogGame[], source: 'firebase' | 'local', error?: any) => void,
+  ): Unsubscribe {
     const catalogRef = this.catalogDocument();
 
     // Carica immediatamente il catalogo locale offline asincrono all'avvio
-    this.readLocal().then((games) => onGames(games));
+    this.readLocal()
+      .then((games) => onGames(games, 'local'))
+      .catch((err) => onGames([], 'local', err));
 
     return onSnapshot(
       catalogRef,
       async (snapshot) => {
-        const games = snapshot.exists()
-          ? this.normalizeGames(snapshot.data())
-          : await this.readLocal();
-
-        onGames(games);
+        try {
+          const games = snapshot.exists()
+            ? this.normalizeGames(snapshot.data())
+            : await this.readLocal();
+          const source = snapshot.exists() ? 'firebase' : 'local';
+          onGames(games, source);
+        } catch (err) {
+          onGames([], 'local', err);
+        }
       },
-      async () => {
-        onGames(await this.readLocal());
+      async (err) => {
+        try {
+          const games = await this.readLocal();
+          onGames(games, 'local', err);
+        } catch (localErr) {
+          onGames([], 'local', err || localErr);
+        }
       },
     );
   }
@@ -64,7 +76,7 @@ export class CatalogStorage {
     const rawGames = data['games'];
 
     if (!Array.isArray(rawGames)) {
-      return this.defaultGames();
+      return [];
     }
 
     return this.normalizeList(rawGames as Partial<CatalogGame>[]);
@@ -73,16 +85,13 @@ export class CatalogStorage {
   private async readLocal(): Promise<CatalogGame[]> {
     const storedGames = await this.db.get<CatalogGame[]>(this.storageKey());
 
-    return storedGames ? this.normalizeList(storedGames) : this.defaultGames();
+    return storedGames ? this.normalizeList(storedGames) : [];
   }
 
   private async writeLocal(games: CatalogGame[]): Promise<void> {
     await this.db.set(this.storageKey(), games);
   }
 
-  private defaultGames(): CatalogGame[] {
-    return MOCK_GAMES.map((game) => toCatalogGame(game));
-  }
 
   private normalizeList(games: Partial<CatalogGame>[]): CatalogGame[] {
     return games
