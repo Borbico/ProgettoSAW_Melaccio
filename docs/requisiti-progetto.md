@@ -14,10 +14,10 @@ Fonte principale: slide `SAW26_01_-_Introduzione.pdf`, pagine 7-9 e 38.
 | Uso di Firestore | Coperto | Catalogo, shelf personali, profili pubblici, ruoli e configurazione RAWG | Le regole limitano letture e scritture in base al ruolo. |
 | Web app installabile come PWA | Coperto | `manifest.webmanifest`, icone, `PwaService`, install prompt | Documentata in `docs/pwa.md`. |
 | Offline e/o pagina offline di fallback | Coperto | Service worker con app shell cache, `offline.html`, disattivazione controlli UI offline e coda locale con sincronizzazione automatica al rientro online |
-| Notifiche, iOS escluso | Coperto | Notifiche di test dal profilo e notifiche di sistema native in tempo reale per follow e completamenti gioco | Funzionalita disponibile sul deploy HTTPS e gestita tramite `SocialNotificationService` |
+| Notifiche, iOS escluso | Coperto | Notifiche di test dal profilo e notifiche di sistema native in tempo reale per follow e completamenti gioco | Funzionalità disponibile sul deploy HTTPS è gestita tramite `SocialNotificationService` |
 | Codice su repository pubblico versionato | Coperto | Repository GitHub pubblico: `https://github.com/Borbico/ProgettoSAW_Melaccio` | Ultimo commit locale allineato a `origin/master`. |
 | README con istruzioni e informazioni necessarie | Coperto | README con demo, requisiti, ruoli, setup, Firebase, RAWG, PWA, test e deploy | Da mantenere aggiornato prima della consegna. |
-| Credenziali utente di test nel README | Coperto | README e `scripts/seed-demo-data.mjs` includono account demo standard e admin | Seed admin gia eseguito su Firebase: account demo, profili, ruoli e catalogo sincronizzati. |
+| Credenziali utente di test nel README | Coperto | README e `scripts/seed-demo-data.mjs` includono account demo standard e admin | Seed admin già eseguito su Firebase: account demo, profili, ruoli e catalogo sincronizzati. |
 | Consegna via mail con link repository | Da fare alla fine | Non riguarda il codice | Oggetto richiesto: `[SAW] Consegna progetto <DataAppello> <Nome> <Cognome> <Matricola>`. |
 
 ## Requisiti tecnici dimostrabili
@@ -25,7 +25,7 @@ Fonte principale: slide `SAW26_01_-_Introduzione.pdf`, pagine 7-9 e 38.
 | Area | Stato | Evidenza |
 | --- | --- | --- |
 | Routing client-side | Coperto | Rotte `catalogo`, `giochi/:id`, `profilo`, `myshelf`, `community`, `community/:userId`. |
-| CRUD catalogo | Coperto | Admin puo creare, modificare ed eliminare giochi; utenti non admin bloccati. |
+| CRUD catalogo | Coperto | Admin può creare, modificare ed eliminare giochi; utenti non admin bloccati. |
 | Dati personali per utente | Coperto | MyShelf separata per utente; catalogo senza statistiche personali. |
 | Community / profili pubblici | Coperto | Lista community, profili seguiti/scopri, shelf pubblica per utenti registrati. |
 | Persistenza e fallback locale | Coperto | Servizi storage con Firestore e fallback locale quando Firebase non risponde. |

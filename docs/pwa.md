@@ -1,7 +1,7 @@
-# Funzionalita PWA
+# Funzionalità PWA
 
 GameShelf include una configurazione PWA completa per rendere l'app installabile e consultabile
-anche quando la rete non e disponibile.
+anche quando la rete non è disponibile.
 
 URL pubblico: `https://saw2026melaccio.web.app`.
 
@@ -17,8 +17,8 @@ URL pubblico: `https://saw2026melaccio.web.app`.
 
 ## Manifest
 
-Il manifest definisce nome, descrizione, tema grafico, icone, modalita `standalone` e scorciatoie
-rapide verso `Catalogo` e l'area personale `Profilo/MyShelf`. Il browser puo quindi proporre
+Il manifest definisce nome, descrizione, tema grafico, icone, modalità `standalone` e scorciatoie
+rapide verso `Catalogo` e l'area personale `Profilo/MyShelf`. Il browser può quindi proporre
 l'installazione di GameShelf come app.
 
 ## Service worker
@@ -32,15 +32,15 @@ Il service worker precachea la shell minima dell'app:
 - icone PWA.
 
 Per le navigazioni usa una strategia network-first: prova a caricare la pagina dalla rete e, se la
-connessione non e disponibile, usa la shell in cache o la pagina offline. Per gli asset statici usa
+connessione non è disponibile, usa la shell in cache o la pagina offline. Per gli asset statici usa
 una strategia cache-first.
 
-Le chiamate verso Firebase e RAWG restano online-first, perche contengono dati dinamici e dipendono
+Le chiamate verso Firebase e RAWG restano online-first, perché contengono dati dinamici e dipendono
 dalla sessione utente.
 
 ## Notifiche
 
-Dal profilo e disponibile una notifica di test. Serve a dimostrare il supporto alle Web
+Dal profilo è disponibile una notifica di test. Serve a dimostrare il supporto alle Web
 Notifications e l'integrazione con il service worker. Il click sulla notifica riporta l'utente al
 catalogo.
 
@@ -66,7 +66,7 @@ verificati su HTTPS:
 - `service-worker.js`;
 - `offline.html`.
 
-Il service worker viene servito con `Cache-Control: no-cache`, cosi il browser puo rilevare
+Il service worker viene servito con `Cache-Control: no-cache`, così il browser può rilevare
 rapidamente gli aggiornamenti della PWA dopo un nuovo deploy.
 
 ## Audit Lighthouse

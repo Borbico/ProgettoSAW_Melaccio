@@ -4,7 +4,7 @@ GameShelf usa RAWG come API esterna per aiutare gli admin a creare e modificare 
 catalogo. RAWG viene usato solo come fonte dati di supporto: il catalogo effettivo dell'app resta
 salvato su Firebase Firestore.
 
-## Perche RAWG
+## Perché RAWG
 
 RAWG espone dati pubblici sui videogiochi tramite API HTTP/JSON. Per questo progetto viene usato
 per recuperare metadati non personali, per esempio:
@@ -24,7 +24,7 @@ API esterna.
 
 ## Configurazione della API key
 
-La API key non e inclusa nel repository pubblico. Per la demo viene salvata su Firestore nel
+La API key non è inclusa nel repository pubblico. Per la demo viene salvata su Firestore nel
 documento `integrations/rawg`, campo `apiKey`, leggibile solo dagli utenti admin tramite Security
 Rules. L'app la recupera automaticamente quando un admin usa l'import RAWG.
 
@@ -35,7 +35,7 @@ Per ottenere o rigenerare la key:
 3. Usare come URL dell'app il link del repository pubblico o, dopo il deploy, l'URL Firebase Hosting.
 4. Salvare la key nel campo `apiKey` del documento Firestore `integrations/rawg`.
 
-Se una key era stata salvata nel vecchio documento pubblico `catalog/default`, la migrazione si puo
+Se una key era stata salvata nel vecchio documento pubblico `catalog/default`, la migrazione si può
 eseguire con:
 
 ```bash
@@ -59,16 +59,16 @@ Questa scelta evita modifiche automatiche al catalogo e lascia all'utente admin 
 prima del salvataggio.
 
 La ricerca mostra 12 risultati alla volta. Se RAWG segnala altri risultati disponibili, l'app mostra
-il pulsante `Carica altri` per consultare la pagina successiva senza perdere i risultati gia
+il pulsante `Carica altri` per consultare la pagina successiva senza perdere i risultati già
 visualizzati.
 
 ## Sicurezza e limiti
 
-In un'app solo frontend una API key letta dal browser non puo essere considerata davvero segreta,
+In un'app solo frontend una API key letta dal browser non può essere considerata davvero segreta,
 anche se viene conservata su Firestore e resa leggibile solo agli admin. Per il progetto didattico e
 sufficiente non versionarla nel repository e limitarne la lettura con le Security Rules. In un
 progetto reale sarebbe preferibile spostare la chiamata RAWG dietro un backend o una Firebase
-Function, cosi da non esporre la key al client.
+Function, così da non esporre la key al client.
 
 ## Attribuzione
 

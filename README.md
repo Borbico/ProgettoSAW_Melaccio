@@ -2,14 +2,14 @@
 
 Progetto di esame per il corso di Sviluppo Applicazioni Web 2026.
 
-GameShelf e una web app per esplorare un catalogo di videogiochi, salvare i propri giochi in una
-shelf personale e confrontare i progressi con altri utenti registrati. Il progetto e sviluppato con
-Angular e Firebase, integra l'API esterna RAWG e include funzionalita PWA.
+GameShelf è una web app per esplorare un catalogo di videogiochi, salvare i propri giochi in una
+shelf personale e confrontare i progressi con altri utenti registrati. Il progetto è sviluppato con
+Angular e Firebase, integra l'API esterna RAWG e include funzionalità PWA.
 
 - Demo Firebase Hosting: [https://saw2026melaccio.web.app](https://saw2026melaccio.web.app)
 - Repository pubblico: [https://github.com/Borbico/ProgettoSAW_Melaccio](https://github.com/Borbico/ProgettoSAW_Melaccio)
 
-## Funzionalita principali
+## Funzionalità principali
 
 - Catalogo pubblico con ricerca, filtri, schede gioco e pagina di dettaglio.
 - MyShelf personale per utenti registrati, con stato, valutazione, ore giocate, progresso, note e
@@ -46,7 +46,7 @@ La checklist completa dei requisiti si trova in
 | --- | --- |
 | Ospite | Vede il catalogo e la pagina profilo con login/registrazione. Non vede MyShelf o Community. |
 | Utente standard | Gestisce la propria MyShelf, vede Community e shelf pubbliche degli altri utenti. |
-| Admin | Ha gli stessi permessi dell'utente standard e puo creare, modificare o eliminare giochi dal catalogo. |
+| Admin | Ha gli stessi permessi dell'utente standard e può creare, modificare o eliminare giochi dal catalogo. |
 
 Il ruolo admin viene letto da Firestore nel documento `userRoles/{uid}` con campo `role: "admin"`.
 
@@ -104,7 +104,7 @@ http://localhost:4200
 ```
 
 In locale il service worker viene disattivato volontariamente per evitare cache stale durante lo
-sviluppo. Le funzionalita PWA vanno provate sul deploy HTTPS.
+sviluppo. Le funzionalità PWA vanno provate sul deploy HTTPS.
 
 ## Firebase
 
@@ -131,10 +131,10 @@ Per rendere admin un utente registrato:
 
 ## RAWG
 
-L'integrazione RAWG e disponibile nel form admin di creazione/modifica gioco. L'admin puo cercare un
+L'integrazione RAWG è disponibile nel form admin di creazione/modifica gioco. L'admin può cercare un
 gioco, importare i dati nel form, controllarli e salvare manualmente nel catalogo.
 
-La API key RAWG non e versionata nel repository. Per la demo viene letta da Firestore nel documento
+La API key RAWG non è versionata nel repository. Per la demo viene letta da Firestore nel documento
 `integrations/rawg`, campo `apiKey`, accessibile solo agli admin tramite Security Rules.
 
 Documentazione completa:
