@@ -90,27 +90,33 @@
 
 .community-tabs {
   display: inline-flex;
-  gap: 6px;
+  gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(21, 21, 21, 0.1);
+  border: 1px solid rgba(21, 21, 21, 0.08);
   border-radius: 999px;
-  background: #ffffff;
+  background: rgba(21, 21, 21, 0.05);
 }
 
 .community-tabs button {
-  min-height: 36px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 0 18px;
   border: 0;
   border-radius: 999px;
-  color: #444444;
+  color: #555555;
   background: transparent;
   font-weight: 900;
   cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.community-tabs button:hover:not(.is-active) {
+  color: #151515;
 }
 
 .community-tabs button.is-active {
   color: #ffffff;
-  background: #151515;
+  background: #267a71;
+  box-shadow: 0 2px 6px rgba(38, 122, 113, 0.2);
 }
 
 .community-tools label {
@@ -119,11 +125,17 @@
   gap: 8px;
 }
 
-.community-tools span,
+.community-tools span {
+  color: #525252;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
 .community-tools p {
   color: #525252;
   font-size: 0.86rem;
   font-weight: 900;
+  margin: 0;
 }
 
 .community-tools input {

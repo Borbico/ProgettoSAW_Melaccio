@@ -50,6 +50,7 @@ export class GameDetailPage {
   protected readonly saveMessage = signal('');
   protected readonly saveMessageTone = signal<NotificationTone>('info');
   protected readonly savingShelf = signal(false);
+  protected readonly showSuccessModal = signal(false);
   protected readonly canSaveDraft = computed(
     () =>
       this.canEditShelf() &&
@@ -153,6 +154,7 @@ export class GameDetailPage {
 
       this.draftDirty.set(false);
       this.setSaveFeedback(persistence);
+      this.showSuccessModal.set(true);
       this.notifyPersistence(
         persistence,
         'MyShelf aggiornata',
@@ -168,6 +170,10 @@ export class GameDetailPage {
     } finally {
       this.savingShelf.set(false);
     }
+  }
+
+  protected closeSuccessModal(): void {
+    this.showSuccessModal.set(false);
   }
 
   protected resetDraft(game: CatalogGame): void {
@@ -257,7 +263,7 @@ export class GameDetailPage {
   private setSaveFeedback(persistence: PersistenceResult): void {
     if (persistence === 'firebase') {
       this.saveMessageTone.set('success');
-      this.saveMessage.set('Modifiche salvate su Firebase.');
+      this.saveMessage.set('Modifiche salvate con successo.');
       return;
     }
 

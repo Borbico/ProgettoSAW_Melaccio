@@ -17,6 +17,17 @@
         <p class="uid-line">
           UID <span>{{ user()?.id }}</span>
         </p>
+
+        <div class="profile-main-actions">
+          @if (notificationPermission() !== 'granted') {
+            <button type="button" class="action-btn" (click)="enableNotifications()">
+              Consenti notifiche
+            </button>
+          }
+          <button type="button" class="action-btn logout-btn" (click)="signOut()">
+            Esci
+          </button>
+        </div>
       </div>
 
       <div class="profile-side">
@@ -46,15 +57,9 @@
             <button type="button" [disabled]="!pwaInstallable()" (click)="installPwa()">
               Installa
             </button>
-            @if (notificationPermission() !== 'granted') {
-              <button type="button" (click)="enableNotifications()">
-                Consenti notifiche
-              </button>
-            }
-            <button type="button" [disabled]="!pwaSupported()" (click)="sendReminderNotification()">
+            <button type="button" class="ghost-btn" [disabled]="!pwaSupported()" (click)="sendReminderNotification()">
               Notifica test
             </button>
-            <button type="button" class="logout-button" (click)="signOut()">Esci</button>
           </div>
         </div>
       </div>

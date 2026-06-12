@@ -41,6 +41,16 @@
           </button>
         }
       </div>
+
+      @if (!canEditShelf()) {
+        <div class="readonly-notice mini-notice">
+          <strong>Accesso richiesto per MyShelf</strong>
+          <p>
+            <a routerLink="/profilo" style="text-decoration: underline; color: inherit; font-weight: 800;">Accedi al tuo profilo</a>
+            o creane uno per aggiungere questo gioco alla tua shelf.
+          </p>
+        </div>
+      }
     </div>
   </section>
 
@@ -77,7 +87,7 @@
     <div class="editor-heading">
       <div>
         <p class="eyebrow">MyShelf editor &middot; {{ roleLabel() }}</p>
-        <h2 id="editor-title">Modifica i tuoi dati personali</h2>
+        <h2 id="editor-title">Aggiorna la tua shelf</h2>
       </div>
 
       @if (draftDirty()) {
@@ -200,6 +210,28 @@
       </div>
     </div>
   </section>
+
+  @if (showSuccessModal()) {
+    <div class="success-modal-backdrop" (click)="closeSuccessModal()">
+      <div class="success-modal-content" (click)="$event.stopPropagation()">
+        <div class="success-modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2>Salvataggio completato!</h2>
+        <p>Il gioco è stato aggiornato correttamente nella tua MyShelf.</p>
+        <div class="success-modal-actions">
+          <button class="primary-button" routerLink="/myshelf" (click)="closeSuccessModal()">
+            Vai a MyShelf
+          </button>
+          <button class="secondary-button" (click)="closeSuccessModal()">
+            Rimani qui
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 } @else {
   <section class="empty-state">
     <h1>Gioco non trovato</h1>

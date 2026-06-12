@@ -406,18 +406,19 @@
             </a>
           }
 
-          @if (canEditShelf()) {
-            <div class="shelf-actions field">
-              <select
-                [ngModel]="shelfStatusMap()[game.id] ?? ''"
-                [disabled]="!!shelfBusyGameId()"
-                (ngModelChange)="updateShelfStatus(game, $event)"
-                [class.in-shelf]="shelfStatusMap()[game.id]"
-                aria-label="Stato nella shelf"
-              >
-                <option value="" disabled>
-                  {{ shelfStatusMap()[game.id] ? 'Stato MyShelf' : 'Aggiungi a MyShelf...' }}
-                </option>
+          <div class="shelf-actions field">
+            <span>Aggiungi a:</span>
+            <select
+              [ngModel]="shelfStatusMap()[game.id] ?? ''"
+              [disabled]="!canEditShelf() || !!shelfBusyGameId()"
+              (ngModelChange)="updateShelfStatus(game, $event)"
+              [class.in-shelf]="shelfStatusMap()[game.id]"
+              aria-label="Stato nella shelf"
+            >
+              @if (!canEditShelf()) {
+                <option value="" disabled selected>Accedi per aggiungere...</option>
+              } @else {
+                <option value="" disabled selected>Seleziona stato...</option>
                 <option value="Wishlist">Desiderato</option>
                 <option value="Backlog">Da giocare</option>
                 <option value="In corso">In corso</option>
@@ -425,9 +426,9 @@
                 @if (shelfStatusMap()[game.id]) {
                   <option value="remove">Rimuovi da MyShelf</option>
                 }
-              </select>
-            </div>
-          }
+              }
+            </select>
+          </div>
 
           @if (canEditCatalog()) {
             <div class="card-actions">
